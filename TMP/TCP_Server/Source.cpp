@@ -1,4 +1,5 @@
 #include<iostream>
+#include<string>
 #include<WS2tcpip.h>
 #pragma comment (lib, "ws2_32.lib")
 using namespace std;
@@ -86,6 +87,10 @@ int main()
 			break;
 		}
 
+		if (bytesReceived > 0)
+		{
+			cout << "CLIENT> " << string(buf, 0, bytesReceived) << endl;
+		}
 		//Echo message back to client 
 		send(clientSocket, buf, bytesReceived + 1, 0);
 	}
