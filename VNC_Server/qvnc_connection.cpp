@@ -1,4 +1,5 @@
 #include "qvnc_connection.h"
+#include "qvncserver.h"
 #include <QtEndian>
 void QRfbPixelFormat::read(QTcpSocket *s)
 {
@@ -119,4 +120,91 @@ bool QRfbFrameBufferUpdateRequest::read(QTcpSocket *s)
     rect.read(s);
 
     return true;
+}
+
+void QRfbRawEncoder::write()
+{
+//    QWSDisplay::grab(false);
+
+    /*QVNCDirtyMap *map = server->dirtyMap();
+    QTcpSocket *socket = server->clientSocket();
+
+    const int bytesPerPixel = server->clientBytesPerPixel();
+    //QSize screenSize = server->screen()->geometry().size();
+
+    // create a region from the dirty rects and send the region's merged rects.
+    QRegion rgn;
+    if (map) {
+        for (int y = 0; y < map->mapHeight; ++y) {
+            for (int x = 0; x < map->mapWidth; ++x) {
+                if (!map->dirty(x, y))
+                    continue;
+                rgn += QRect(x * MAP_TILE_SIZE, y * MAP_TILE_SIZE,
+                             MAP_TILE_SIZE, MAP_TILE_SIZE);
+                map->setClean(x, y);
+            }
+        }
+
+        rgn &= QRect(0, 0, screenSize.width(),
+                     screenSize.height());
+    }
+    const QVector<QRect> rects = rgn.rects();
+
+    {
+        const char tmp[2] = { 0, 0 }; // msg type, padding
+        socket->write(tmp, sizeof(tmp));
+    }
+
+    {
+        const quint16 count = htons(rects.size());
+        socket->write((char *)&count, sizeof(count));
+    }
+
+    if (rects.size() <= 0) {
+//        QWSDisplay::ungrab();
+        return;
+    }
+
+    const QImage *screenImage = server->screenImage();
+
+    for (int i = 0; i < rects.size(); ++i) {
+        const QRect tileRect = rects.at(i);
+        const QRfbRect rect(tileRect.x(), tileRect.y(),
+                            tileRect.width(), tileRect.height());
+        rect.write(socket);
+
+        const quint32 encoding = htonl(0); // raw encoding
+        socket->write((char *)&encoding, sizeof(encoding));
+
+        int linestep = screenImage->bytesPerLine();
+        const uchar *screendata = screenImage->scanLine(rect.y)
+                                  + rect.x * screenImage->depth() / 8;
+
+
+        if (server->doPixelConversion()) {
+            const int bufferSize = rect.w * rect.h * bytesPerPixel;
+            if (bufferSize > buffer.size())
+                buffer.resize(bufferSize);
+
+            // convert pixels
+            char *b = buffer.data();
+            const int bstep = rect.w * bytesPerPixel;
+            for (int i = 0; i < rect.h; ++i) {
+                server->convertPixels(b, (const char*)screendata, rect.w);
+                screendata += linestep;
+                b += bstep;
+            }
+            socket->write(buffer.constData(), bufferSize);
+        } else {
+            for (int i = 0; i < rect.h; ++i) {
+                socket->write((const char*)screendata, rect.w * bytesPerPixel);
+                screendata += linestep;
+            }
+        }
+        if (socket->state() == QAbstractSocket::UnconnectedState)
+            break;
+    }
+    socket->flush();
+
+//    QWSDisplay::ungrab();*/
 }

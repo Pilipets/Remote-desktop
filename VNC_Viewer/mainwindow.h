@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "qvncviewer.h"
+//#include "qvncviewer.h"
 namespace Ui {
 class MainWindow;
 }
@@ -22,7 +22,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
-    QVNCViewer* viewer;
+    //QVNCViewer* viewer;
 };
 
 #endif // MAINWINDOW_H

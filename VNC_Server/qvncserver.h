@@ -8,7 +8,9 @@
 #include<QDataStream>
 #include<QByteArray>
 #include <QScreen>
+#include <QTimer>
 
+class QRfbEncoder;
 #include "qvnc_connection.h"
 class QVNCServer : public QObject
 {
@@ -17,11 +19,16 @@ public:
     QVNCServer();
     ~QVNCServer();
 
+    inline bool isConnected() const { return state == Connected; }
+    inline QTcpSocket* clientSocket() const { return client; }
+    inline int clientBytesPerPixel() const {
+        return pixelFormat.bitsPerPixel / 8;
+    }
 private slots:
     void newConnection();
     void readClient();
     void discardClient();
-
+    void checkUpdate();
 private:
 
     void init(quint16 port);
@@ -37,6 +44,11 @@ private:
 
     QTcpServer* serverSocket;
     QTcpSocket* client;
+    QRfbPixelFormat pixelFormat;
+    QRfbEncoder *encoder;
+
+    QTimer *timer;
+    int refreshRate;
 
     QString m_ip;
     quint16 m_port;
@@ -45,8 +57,6 @@ private:
     bool wantUpdate;
 
 public:
-    void TurnOn();
-    void TurnOff();
     inline QString getIP(){return m_ip;}
     inline quint16 getPort() {return  m_port;}
 };

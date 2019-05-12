@@ -2,6 +2,14 @@
 #define QVNC_CONNECTION_H
 
 #include <QtNetwork/QTcpSocket>
+
+
+quint16 qMakeU16(quint8 l, quint8 h);
+
+quint32 qMakeU32(quint16 l, quint16 h);
+
+quint32 qMakeU32(quint8 lowest, quint8 low, quint8 high, quint8 highest);
+
 class QRfbPixelFormat
 {
 public:

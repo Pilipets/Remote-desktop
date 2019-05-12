@@ -2,6 +2,7 @@
 #define QVNC_CONNECTION_H
 
 #include <QtNetwork/QTcpSocket>
+class QVNCServer;
 class QRfbPixelFormat
 {
 public:
@@ -64,5 +65,28 @@ public:
 
     char incremental;
     QRfbRect rect;
+};
+
+class QRfbEncoder
+{
+public:
+    QRfbEncoder(QVNCServer *s) : server(s) {}
+    virtual ~QRfbEncoder() {}
+
+    virtual void write() = 0;
+
+protected:
+    QVNCServer *server;
+};
+
+class QRfbRawEncoder : public QRfbEncoder
+{
+public:
+    QRfbRawEncoder(QVNCServer *s) : QRfbEncoder(s) {}
+
+    void write();
+
+private:
+    QByteArray buffer;
 };
 #endif // QVNC_CONNECTION_H

@@ -5,14 +5,16 @@
 #include <QtNetwork/QTcpSocket>
 #include "qvnc_connection.h"
 #include <QImage>
-class QVNCViewer : public QObject
+#include <QWidget>
+#include <QtCore>
+class QVNCViewer : public QWidget
 {
     Q_OBJECT
 public:
-    QVNCViewer();
-    ~QVNCViewer();
+    explicit QVNCViewer(QWidget *parent);
+    ~QVNCViewer() override;
 
-    bool connectToVncSever(QString ip, quint16 port);
+    bool connectToVncServer(QString ip, quint16 port);
     void disconnectFromVncServer();
     void startFrameBufferUpdate()
     {
@@ -24,6 +26,9 @@ public:
     {
         disconnect(this, SIGNAL(frameBufferUpdated()), this, SLOT(sendFrameBufferUpdateRequest()));
     }
+
+protected:
+    void paintEvent(QPaintEvent *) override;
 private slots:
     void onServerMessage();
     void sendFrameBufferUpdateRequest();

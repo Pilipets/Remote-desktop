@@ -7,7 +7,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    viewer = new QVNCViewer();
+    //viewer = new QVNCViewer();
     connect(ui->connect_btn, SIGNAL(clicked()),this, SLOT(connect_btn_clicked()));
     connect(ui->disconnect_btn, SIGNAL(clicked()), this, SLOT(disconnect_btn_clicked()));
 }
@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     delete ui;
-    delete viewer;
+    //delete viewer;
 }
 
 void MainWindow::connect_btn_clicked()
@@ -28,11 +28,10 @@ void MainWindow::connect_btn_clicked()
     qDebug() << "Connect button pressed\n";
     qDebug() << ip << ": " << port << endl;
 
-    viewer->connectToVncSever(ip,port);
-    //viewer->startFrameBufferUpdate();
+    ui->viewer_widget->connectToVncServer(ip,port);
 }
 
 void MainWindow::disconnect_btn_clicked()
 {
-    viewer->disconnectFromVncServer();
+    ui->viewer_widget->disconnectFromVncServer();
 }

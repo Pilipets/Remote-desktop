@@ -1,6 +1,7 @@
 #include "qvncviewer.h"
 #include<QtNetwork/QHostAddress>
-QVNCViewer::QVNCViewer()
+#include <QPainter>
+QVNCViewer::QVNCViewer(QWidget *parent) : QWidget(parent)
 {
     server = new QTcpSocket();
     isFrameBufferUpdating = true;
@@ -11,7 +12,7 @@ QVNCViewer::~QVNCViewer()
     disconnectFromVncServer();
 }
 
-bool QVNCViewer::connectToVncSever(QString ip, quint16 port)
+bool QVNCViewer::connectToVncServer(QString ip, quint16 port)
 {
     qDebug() << "Trying connect to " << ip << port;
     server->connectToHost(QHostAddress(ip), port);
@@ -59,39 +60,130 @@ bool QVNCViewer::connectToVncSever(QString ip, quint16 port)
         qDebug() << "Blue Shift: " << pixelFormat.blueShift;
 
         qDebug() << "Name: " << response.name << "\n";
-        screen = QImage(frameBufferWidth, frameBufferHeight, QImage::Format_RGB32);
-        return true;
     }
-    return  false;
+    else
+    {
+        qDebug() << "Not connected to " << ip;
+        qDebug() << server->errorString();
+        return false;
+    }
+    screen = QImage(frameBufferWidth, frameBufferHeight, QImage::Format_RGB32);
+    startFrameBufferUpdate();
+    return true;
 }
 
 void QVNCViewer::disconnectFromVncServer()
 {
-    server->close();
+    //disconnect(server, SIGNAL(readyRead()), this, SLOT(onServerMessage()));
+    //server->close();
     server->disconnectFromHost();
-    disconnect(server, SIGNAL(readyRead()), this, SLOT(onServerMessage()));
+}
+
+void QVNCViewer::paintEvent(QPaintEvent *)
+{
+    if(screen.isNull())
+    {
+        screen = QImage(width(), height(), QImage::Format_RGB32);
+        screen.fill(Qt::red);
+    }
+
+    QPainter painter;
+    painter.begin(this);
+    painter.drawImage(0, 0, screen.scaled(width(), height(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+    painter.end();
 }
 
 void QVNCViewer::onServerMessage()
 {
-    //disconnect(server, SIGNAL(readyRead()), this, SLOT(onServerMessage()));
+    disconnect(server, SIGNAL(readyRead()), this, SLOT(onServerMessage()));
 
     QByteArray response;
-    response = server->read(1);
-    quint8 mType = response.at(0);
-
     int noOfRects;
-    switch(mType)
+    response = server->read(1);
+    switch(response.at(0))
     {
+
+    // ***************************************************************************************
+    // ***************************** Frame Buffer Update *************************************
+    // ***************************************************************************************
     case FramebufferUpdate:
+
+        response = server->read(1); // padding
+        response = server->read(2); // number of rectangles
+
+        noOfRects = qMakeU16(response.at(0), response.at(1));
+
+        for(int i=0; i<noOfRects; i++)
+        {
+
+            qApp->processEvents();
+            response = server->read(2);
+            int xPosition = qMakeU16(response.at(0), response.at(1));
+            response = server->read(2);
+            int yPosition = qMakeU16(response.at(0), response.at(1));
+            response = server->read(2);
+            int width = qMakeU16(response.at(0), response.at(1));
+            response = server->read(2);
+            int height = qMakeU16(response.at(0), response.at(1));
+            response = server->read(4);
+            int encodingType = qMakeU32(response.at(0), response.at(1), response.at(2), response.at(3));
+
+            QImage image(width, height, QImage::Format_RGB32);
+
+            if(encodingType == 0)
+            {
+
+                int noOfBytes = width * height * (pixelFormat.bitsPerPixel / 8);
+                QByteArray pixelsData;
+
+                do
+                {
+                    qApp->processEvents();
+                    QByteArray temp = server->read(noOfBytes);
+                    pixelsData.append(temp);
+                    noOfBytes -= temp.size();
+                }
+                while(noOfBytes > 0);
+
+                uchar* img_pointer = image.bits();
+
+                int pixel_byte_cnt = 0;
+                for(int i=0; i<height; i++)
+                {
+                    qApp->processEvents();
+
+                    for(int j=0; j<width; j++)
+                    {
+                        // The order of the colors is BGR (not RGB)
+                        img_pointer[0] = pixelsData.at(pixel_byte_cnt);
+                        img_pointer[1] = pixelsData.at(pixel_byte_cnt+1);
+                        img_pointer[2] = pixelsData.at(pixel_byte_cnt+2);
+                        img_pointer[3] = pixelsData.at(pixel_byte_cnt+3);
+
+                        pixel_byte_cnt += 4;
+                        img_pointer += 4;
+                    }
+                }
+            }
+
+            QPainter painter(&screen);
+            painter.drawImage(xPosition, yPosition, image);
+            painter.end();
+
+            repaint();
+        }
+
+        emit frameBufferUpdated();
         break;
-    default:
-        break;
+
     }
+
+    connect(server, SIGNAL(readyRead()), this, SLOT(onServerMessage()));
 }
 
 void QVNCViewer::sendFrameBufferUpdateRequest()
 {
+    qDebug() << "Sending Frame buffer Update Request\n";
     QByteArray frameBufferUpdateRequest(10, 0);
     frameBufferUpdateRequest[0] = 3; // message type must be 3
     frameBufferUpdateRequest[1] = 1; // incremental mode is zero for now (can help optimize the VNC client)
