@@ -1,27 +1,5 @@
-#include "vnc_server_helper.h"
-
-void QRfbRect::read(QTcpSocket *s)
-{
-    quint16 buf[4];
-    s->read((char*)buf, 8);
-    //ntohs
-    x = qFromBigEndian(buf[0]);
-    y = qFromBigEndian(buf[1]);
-    w = qFromBigEndian(buf[2]);
-    h = qFromBigEndian(buf[3]);
-}
-
-void QRfbRect::write(QTcpSocket *s) const
-{
-    quint16 buf[4];
-    //htons
-    buf[0] = qToBigEndian(x);
-    buf[1] = qToBigEndian(y);
-    buf[2] = qToBigEndian(w);
-    buf[3] = qToBigEndian(h);
-    s->write((char*)buf, 8);
-}
-
+#include "qvnc_connection.h"
+#include <QtEndian>
 void QRfbPixelFormat::read(QTcpSocket *s)
 {
     char buf[16];
@@ -74,6 +52,7 @@ void QRfbPixelFormat::write(QTcpSocket *s)
     s->write(buf, 16);
 }
 
+
 void QRfbServerInit::setName(const char *n)
 {
     delete[] name;
@@ -109,4 +88,35 @@ void QRfbServerInit::write(QTcpSocket *s)
     len = qToBigEndian(len);
     s->write((char *)&len, 4);
     s->write(name, strlen(name));
+}
+
+void QRfbRect::read(QTcpSocket *s)
+{
+    quint16 buf[4];
+    s->read((char*)buf, 8);
+    x = qFromBigEndian(buf[0]);
+    y = qFromBigEndian(buf[1]);
+    w = qFromBigEndian(buf[2]);
+    h = qFromBigEndian(buf[3]);
+}
+
+void QRfbRect::write(QTcpSocket *s) const
+{
+    quint16 buf[4];
+    buf[0] = qToBigEndian(x);
+    buf[1] = qToBigEndian(y);
+    buf[2] = qToBigEndian(w);
+    buf[3] = qToBigEndian(h);
+    s->write((char*)buf, 8);
+}
+
+bool QRfbFrameBufferUpdateRequest::read(QTcpSocket *s)
+{
+    if (s->bytesAvailable() < 9)
+        return false;
+
+    s->read(&incremental, 1);
+    rect.read(s);
+
+    return true;
 }

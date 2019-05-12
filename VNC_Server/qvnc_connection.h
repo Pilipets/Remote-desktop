@@ -1,25 +1,7 @@
-#ifndef VNC_SERVER_HELPER_H
-#define VNC_SERVER_HELPER_H
+#ifndef QVNC_CONNECTION_H
+#define QVNC_CONNECTION_H
 
 #include <QtNetwork/QTcpSocket>
-#include<QtEndian>
-class QRfbRect
-{
-public:
-    QRfbRect() {}
-    QRfbRect(quint16 _x, quint16 _y, quint16 _w, quint16 _h) {
-        x = _x; y = _y; w = _w; h = _h;
-    }
-
-    void read(QTcpSocket *s);
-    void write(QTcpSocket *s) const;
-
-    quint16 x;
-    quint16 y;
-    quint16 w;
-    quint16 h;
-};
-
 class QRfbPixelFormat
 {
 public:
@@ -58,4 +40,29 @@ public:
     char *name;
 };
 
-#endif // VNC_SERVER_HELPER_H
+class QRfbRect
+{
+public:
+    QRfbRect() {}
+    QRfbRect(quint16 _x, quint16 _y, quint16 _w, quint16 _h) {
+        x = _x; y = _y; w = _w; h = _h;
+    }
+
+    void read(QTcpSocket *s);
+    void write(QTcpSocket *s) const;
+
+    quint16 x;
+    quint16 y;
+    quint16 w;
+    quint16 h;
+};
+
+class QRfbFrameBufferUpdateRequest
+{
+public:
+    bool read(QTcpSocket *s);
+
+    char incremental;
+    QRfbRect rect;
+};
+#endif // QVNC_CONNECTION_H
