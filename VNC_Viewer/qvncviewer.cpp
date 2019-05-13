@@ -74,9 +74,9 @@ bool QVNCViewer::connectToVncServer(QString ip, quint16 port)
 
 void QVNCViewer::disconnectFromVncServer()
 {
-    //disconnect(server, SIGNAL(readyRead()), this, SLOT(onServerMessage()));
-    //server->close();
+    disconnect(server, SIGNAL(readyRead()), this, SLOT(onServerMessage()));
     server->disconnectFromHost();
+    server->close();
 }
 
 void QVNCViewer::paintEvent(QPaintEvent *)

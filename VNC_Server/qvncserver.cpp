@@ -172,8 +172,10 @@ void QVNCServer::discardClient()
 {
     state = Unconnected;
     //if(client)
+    //{
     //    delete client;
-    //client = nullptr;
+    //}
+    client = nullptr;
     qDebug() << "Client has disconnected\n";
 }
 

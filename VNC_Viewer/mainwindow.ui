@@ -48,7 +48,7 @@
      </property>
     </widget>
    </widget>
-   <widget class="QVNCClientWidget" name="viewer_widget" native="true">
+   <widget class="QVNCViewer" name="viewer_widget" native="true">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -82,9 +82,9 @@
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
-   <class>QVNCClientWidget</class>
+   <class>QVNCViewer</class>
    <extends>QWidget</extends>
-   <header>qvncclientwidget.h</header>
+   <header location="global">qvncviewer.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
