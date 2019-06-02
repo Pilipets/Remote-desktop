@@ -16,14 +16,14 @@ class QVNCServer : public QObject
 {
     Q_OBJECT
 public:
-    QVNCServer();
+    QVNCServer(QScreen* screen);
     ~QVNCServer();
 
-    inline bool isConnected() const { return state == Connected; }
-    inline QTcpSocket* clientSocket() const { return client; }
-    inline int clientBytesPerPixel() const {
-        return pixelFormat.bitsPerPixel / 8;
-    }
+    bool isConnected() const { return state == Connected; }
+    QTcpSocket* clientSocket() const { return client; }
+    int clientBytesPerPixel() const {return pixelFormat.bitsPerPixel / 8;}
+    QScreen* workingScreen() const {return screen;}
+
 private slots:
     void newConnection();
     void readClient();
@@ -46,9 +46,7 @@ private:
     QTcpSocket* client;
     QRfbPixelFormat pixelFormat;
     QRfbEncoder *encoder;
-
-    QTimer *timer;
-    int refreshRate;
+    QScreen *screen;
 
     QString m_ip;
     quint16 m_port;

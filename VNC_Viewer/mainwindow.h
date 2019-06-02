@@ -17,7 +17,6 @@ public:
 private slots:
     void connect_btn_clicked();
     void disconnect_btn_clicked();
-    //void disconnect_btn_clicked();
 
 private:
     Ui::MainWindow *ui;

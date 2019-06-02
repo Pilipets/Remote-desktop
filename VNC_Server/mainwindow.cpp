@@ -6,13 +6,14 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
-    server = new QVNCServer();
+    QScreen* screen = QGuiApplication::primaryScreen();
+    server = new QVNCServer(screen);
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+    delete server;
 }
 
 void MainWindow::on_pushButton_clicked()

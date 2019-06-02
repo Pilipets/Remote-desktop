@@ -3,22 +3,18 @@
 #include <QtEndian>
 #include <QNetworkInterface>
 
-QVNCServer::QVNCServer() : client(nullptr)
+QVNCServer::QVNCServer(QScreen *screen) : client(nullptr)
 {
+    this->screen = screen;
     init(5900);
 }
 
 void QVNCServer::init(quint16 port)
 {
-    //encoder = new QRfbRawEncoder;
+    encoder = new QRfbRawEncoder(this);
     qDebug() << "QVNCServer::init" << port;
     state = Unconnected;
     handleMsg = false;
-
-    refreshRate = 25;
-    timer = new QTimer(this);
-    timer->setSingleShot(true);
-    connect(timer, SIGNAL(timeout()), this, SLOT(checkUpdate()));
 
     serverSocket = new QTcpServer(this);
     if (!serverSocket->listen(QHostAddress::Any, port))
@@ -45,11 +41,8 @@ void QVNCServer::checkUpdate()
     if (!wantUpdate)
             return;
 
-    //if (dirtyMap()->numDirty > 0) {
-    //    if (encoder)
-    //        encoder->write();
-    //    wantUpdate = false;
-    //}
+    encoder->write();
+    wantUpdate = false;
 }
 
 void QVNCServer::frameBufferUpdateRequest()
@@ -66,9 +59,7 @@ void QVNCServer::frameBufferUpdateRequest()
         qDebug() << "Height: " << ev.rect.h;
 
         if (!ev.incremental) {
-            QRect r(ev.rect.x, ev.rect.y, ev.rect.w, ev.rect.h);
-            //r.translate(qvnc_screen->offset());
-            //qvnc_screen->d_ptr->setDirty(r, true);
+            //Mark the area from ev as missed by making screen dirty at that area
         }
         wantUpdate = true;
         checkUpdate();
@@ -88,7 +79,6 @@ void QVNCServer::newConnection()
 
     handleMsg = false;
     wantUpdate = false;
-    timer->start(1000 / refreshRate);
 
     // send protocol version
     const char *proto = "RFB 003.008\n";
@@ -136,8 +126,8 @@ void QVNCServer::readClient()
             format.greenShift = 8;
             format.blueShift = 0;
 
-            sim.width = 480;//qvnc_screen->geometry().width();
-            sim.height = 720;//qvnc_screen->geometry().height();
+            sim.width = screen->geometry().width();//qvnc_screen->geometry().width();
+            sim.height = screen->geometry().height();//qvnc_screen->geometry().height();
             sim.setName("Qt MAC VNC Server");
             sim.write(client);
 
@@ -171,15 +161,19 @@ void QVNCServer::readClient()
 void QVNCServer::discardClient()
 {
     state = Unconnected;
-    //if(client)
-    //{
-    //    delete client;
-    //}
+    disconnect(client,SIGNAL(readyRead()),this,SLOT(readClient()));
+    disconnect(client,SIGNAL(disconnected()),this,SLOT(discardClient()));
+    client->disconnect();
+    client->deleteLater();
     client = nullptr;
     qDebug() << "Client has disconnected\n";
 }
 
 QVNCServer::~QVNCServer()
 {
+    disconnect(serverSocket, SIGNAL(newConnection()), this, SLOT(newConnection()));
     discardClient();
+    serverSocket->close();
+    delete serverSocket;
+    delete encoder;
 }

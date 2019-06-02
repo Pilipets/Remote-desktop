@@ -14,6 +14,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    disconnect(ui->connect_btn, SIGNAL(clicked()),this, SLOT(connect_btn_clicked()));
+    disconnect(ui->disconnect_btn, SIGNAL(clicked()), this, SLOT(disconnect_btn_clicked()));
     delete ui;
     //delete viewer;
 }
@@ -33,5 +35,6 @@ void MainWindow::connect_btn_clicked()
 
 void MainWindow::disconnect_btn_clicked()
 {
+    qDebug() << "Disconnect button pressed\n";
     ui->viewer_widget->disconnectFromVncServer();
 }

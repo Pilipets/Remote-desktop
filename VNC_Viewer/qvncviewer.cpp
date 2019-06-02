@@ -5,11 +5,14 @@ QVNCViewer::QVNCViewer(QWidget *parent) : QWidget(parent)
 {
     server = new QTcpSocket();
     isFrameBufferUpdating = true;
+
+    connect(server, &QTcpSocket::disconnected, this, &QVNCViewer::disconnectFromVncServer);
 }
 
 QVNCViewer::~QVNCViewer()
 {
     disconnectFromVncServer();
+    delete server;
 }
 
 bool QVNCViewer::connectToVncServer(QString ip, quint16 port)
@@ -173,7 +176,7 @@ void QVNCViewer::onServerMessage()
             repaint();
         }
 
-        emit frameBufferUpdated();
+        //emit frameBufferUpdated();
         break;
 
     }
@@ -201,3 +204,4 @@ void QVNCViewer::sendFrameBufferUpdateRequest()
 
     connect(server, SIGNAL(readyRead()), this, SLOT(onServerMessage()));
 }
+
