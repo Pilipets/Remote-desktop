@@ -161,11 +161,14 @@ void QVNCServer::readClient()
 void QVNCServer::discardClient()
 {
     state = Unconnected;
-    disconnect(client,SIGNAL(readyRead()),this,SLOT(readClient()));
-    disconnect(client,SIGNAL(disconnected()),this,SLOT(discardClient()));
-    client->disconnect();
-    client->deleteLater();
-    client = nullptr;
+    if(client)
+    {
+        disconnect(client,SIGNAL(readyRead()),this,SLOT(readClient()));
+        disconnect(client,SIGNAL(disconnected()),this,SLOT(discardClient()));
+        client->disconnect();
+        client->deleteLater();
+        client = nullptr;
+    }
     qDebug() << "Client has disconnected\n";
 }
 

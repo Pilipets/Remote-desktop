@@ -19,7 +19,7 @@ bool QVNCViewer::connectToVncServer(QString ip, quint16 port)
 {
     qDebug() << "Trying connect to " << ip << port;
     server->connectToHost(QHostAddress(ip), port);
-    if(server->waitForConnected()){
+    if(server->waitForConnected(5000)){
         qDebug() << "Connected to Server\n";
         server->waitForReadyRead();
 
@@ -77,6 +77,7 @@ bool QVNCViewer::connectToVncServer(QString ip, quint16 port)
 
 void QVNCViewer::disconnectFromVncServer()
 {
+
     disconnect(server, SIGNAL(readyRead()), this, SLOT(onServerMessage()));
     server->disconnectFromHost();
     server->close();
