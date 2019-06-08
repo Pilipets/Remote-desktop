@@ -51,7 +51,7 @@ public:
     ~QVNCScreenPrivate();
 
     void setDirty(const QRect &rect, bool force = false);
-    void configure();
+    //void configure();
 
     qreal dpiX;
     qreal dpiY;

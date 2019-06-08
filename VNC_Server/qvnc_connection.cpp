@@ -2,7 +2,7 @@
 #include "qvncserver.h"
 #include <QtEndian>
 #include <QtCore>
-#include "qvnc_screen.h"
+#include "vnc_map.h"
 #include<QPixmap>
 void QRfbPixelFormat::read(QTcpSocket *s)
 {

@@ -1,4 +1,4 @@
-#include "qvnc_screen.h"
+#include "vnc_map.h"
 
 QVNCDirtyMap::QVNCDirtyMap(QVNCScreen *screen):
     bytesPerPixel(0), numDirty(0), screen(screen)
