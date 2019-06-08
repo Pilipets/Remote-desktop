@@ -1,8 +1,26 @@
 #ifndef QVNC_CONNECTION_H
 #define QVNC_CONNECTION_H
 
-#include <QtNetwork/QTcpSocket>
-class QVNCServer;
+#include<QObject>
+#include<QByteArray>
+class QTcpSocket;
+class QVncClient;
+class QRfbRect
+{
+public:
+    QRfbRect() {}
+    QRfbRect(quint16 _x, quint16 _y, quint16 _w, quint16 _h) {
+        x = _x; y = _y; w = _w; h = _h;
+    }
+
+    void read(QTcpSocket *s);
+    void write(QTcpSocket *s) const;
+
+    quint16 x;
+    quint16 y;
+    quint16 w;
+    quint16 h;
+};
 class QRfbPixelFormat
 {
 public:
@@ -41,23 +59,6 @@ public:
     char *name;
 };
 
-class QRfbRect
-{
-public:
-    QRfbRect() {}
-    QRfbRect(quint16 _x, quint16 _y, quint16 _w, quint16 _h) {
-        x = _x; y = _y; w = _w; h = _h;
-    }
-
-    void read(QTcpSocket *s);
-    void write(QTcpSocket *s) const;
-
-    quint16 x;
-    quint16 y;
-    quint16 w;
-    quint16 h;
-};
-
 class QRfbFrameBufferUpdateRequest
 {
 public:
@@ -70,23 +71,24 @@ public:
 class QRfbEncoder
 {
 public:
-    QRfbEncoder(QVNCServer *s) : server(s) {}
+    QRfbEncoder(QVncClient *s) : client(s) {}
     virtual ~QRfbEncoder() {}
 
     virtual void write() = 0;
 
 protected:
-    QVNCServer *server;
+    QVncClient *client;
 };
 
 class QRfbRawEncoder : public QRfbEncoder
 {
 public:
-    QRfbRawEncoder(QVNCServer *s) : QRfbEncoder(s) {}
+    QRfbRawEncoder(QVncClient *s) : QRfbEncoder(s) {}
 
-    void write();
+    void write() override;
 
 private:
     QByteArray buffer;
 };
+
 #endif // QVNC_CONNECTION_H

@@ -7,7 +7,6 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    //viewer = new QVNCViewer();
     connect(ui->connect_btn, SIGNAL(clicked()),this, SLOT(connect_btn_clicked()));
     connect(ui->disconnect_btn, SIGNAL(clicked()), this, SLOT(disconnect_btn_clicked()));
 }
@@ -17,7 +16,6 @@ MainWindow::~MainWindow()
     disconnect(ui->connect_btn, SIGNAL(clicked()),this, SLOT(connect_btn_clicked()));
     disconnect(ui->disconnect_btn, SIGNAL(clicked()), this, SLOT(disconnect_btn_clicked()));
     delete ui;
-    //delete viewer;
 }
 
 void MainWindow::connect_btn_clicked()

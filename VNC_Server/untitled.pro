@@ -1,15 +1,14 @@
 #-------------------------------------------------
 #
-# Project created by QtCreator 2019-05-11T20:45:37
+# Project created by QtCreator 2019-06-08T18:51:52
 #
 #-------------------------------------------------
 
-QT += core gui
-QT += network
-QT += widgets
+QT       += core gui network
+
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = VNC_Server
+TARGET = untitled
 TEMPLATE = app
 
 # The following define makes your compiler emit warnings if you use
@@ -28,13 +27,15 @@ CONFIG += c++11
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    qvncserver.cpp \
+    qvnc_client.cpp \
+    qvnc_server.cpp \
     qvnc_connection.cpp
 
 HEADERS += \
         mainwindow.h \
-    qvncserver.h \
-    qvnc_connection.h
+    qvnc_client.h \
+    qvnc_connection.h \
+    qvnc_server.h
 
 FORMS += \
         mainwindow.ui

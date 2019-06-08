@@ -12,7 +12,7 @@ QVNCViewer::QVNCViewer(QWidget *parent) : QWidget(parent)
 QVNCViewer::~QVNCViewer()
 {
     disconnectFromVncServer();
-    delete server;
+    server->deleteLater();
 }
 
 bool QVNCViewer::connectToVncServer(QString ip, quint16 port)
@@ -27,7 +27,7 @@ bool QVNCViewer::connectToVncServer(QString ip, quint16 port)
         server->read(proto, 12);
         proto[12] = '\0';
         qDebug("Server protocol version %s", proto);
-        server->write("RFB 003.008\n");
+        server->write("RFB 003.007\n");
         server->waitForReadyRead();
 
         // No authentication
@@ -77,9 +77,7 @@ bool QVNCViewer::connectToVncServer(QString ip, quint16 port)
 
 void QVNCViewer::disconnectFromVncServer()
 {
-
     disconnect(server, SIGNAL(readyRead()), this, SLOT(onServerMessage()));
-    server->disconnectFromHost();
     server->close();
 }
 
@@ -104,6 +102,7 @@ void QVNCViewer::onServerMessage()
     QByteArray response;
     int noOfRects;
     response = server->read(1);
+    qDebug() << "read Server " << response.at(0);
     switch(response.at(0))
     {
 
@@ -114,7 +113,6 @@ void QVNCViewer::onServerMessage()
 
         response = server->read(1); // padding
         response = server->read(2); // number of rectangles
-
         noOfRects = qMakeU16(response.at(0), response.at(1));
 
         for(int i=0; i<noOfRects; i++)
@@ -177,7 +175,8 @@ void QVNCViewer::onServerMessage()
             repaint();
         }
 
-        //emit frameBufferUpdated();
+        //this->sendFrameBufferUpdateRequest();
+        emit frameBufferUpdated();
         break;
 
     }

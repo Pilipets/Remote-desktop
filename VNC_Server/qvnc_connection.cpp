@@ -1,8 +1,31 @@
 #include "qvnc_connection.h"
-#include "qvncserver.h"
+#include "qvnc_client.h"
 #include <QtEndian>
-#include <QtCore>
-#include<QPixmap>
+#include <QtNetwork/QTcpSocket>
+#include <QScreen>
+#include <QPixmap>
+#include <QDebug>
+#include <QApplication>
+void QRfbRect::read(QTcpSocket *s)
+{
+    quint16 buf[4];
+    s->read((char*)buf, 8);
+    x = qFromBigEndian(buf[0]);
+    y = qFromBigEndian(buf[1]);
+    w = qFromBigEndian(buf[2]);
+    h = qFromBigEndian(buf[3]);
+}
+
+void QRfbRect::write(QTcpSocket *s) const
+{
+    quint16 buf[4];
+    buf[0] = qToBigEndian(x);
+    buf[1] = qToBigEndian(y);
+    buf[2] = qToBigEndian(w);
+    buf[3] = qToBigEndian(h);
+    s->write((char*)buf, 8);
+}
+
 void QRfbPixelFormat::read(QTcpSocket *s)
 {
     char buf[16];
@@ -55,7 +78,6 @@ void QRfbPixelFormat::write(QTcpSocket *s)
     s->write(buf, 16);
 }
 
-
 void QRfbServerInit::setName(const char *n)
 {
     delete[] name;
@@ -93,25 +115,6 @@ void QRfbServerInit::write(QTcpSocket *s)
     s->write(name, strlen(name));
 }
 
-void QRfbRect::read(QTcpSocket *s)
-{
-    quint16 buf[4];
-    s->read((char*)buf, 8);
-    x = qFromBigEndian(buf[0]);
-    y = qFromBigEndian(buf[1]);
-    w = qFromBigEndian(buf[2]);
-    h = qFromBigEndian(buf[3]);
-}
-
-void QRfbRect::write(QTcpSocket *s) const
-{
-    quint16 buf[4];
-    buf[0] = qToBigEndian(x);
-    buf[1] = qToBigEndian(y);
-    buf[2] = qToBigEndian(w);
-    buf[3] = qToBigEndian(h);
-    s->write((char*)buf, 8);
-}
 
 bool QRfbFrameBufferUpdateRequest::read(QTcpSocket *s)
 {
@@ -126,21 +129,20 @@ bool QRfbFrameBufferUpdateRequest::read(QTcpSocket *s)
 
 void QRfbRawEncoder::write()
 {
-    QScreen* screen = server->workingScreen();
-    QSize screenSize = screen->geometry().size();
-    QTcpSocket *socket = server->clientSocket();
-    const int bytesPerPixel = server->clientBytesPerPixel();
+    qDebug() << "QRfbRawEncoder::write()";
+    QTcpSocket *socket = client->clientSocket();
 
     const char tmp[2] = { 0, 0 }; // msg type, padding
     socket->write(tmp, sizeof(tmp));
 
-
     const quint16 count = qToBigEndian(quint16(1)); //rectangle amount
     socket->write((char *)&count, sizeof(count));
 
+    QScreen* const screen = client->server()->screen();
+    const QSize screenSize = screen->geometry().size();
 
-
-    QPixmap originalPixMap = screen->grabWindow(0,0,0,screenSize.width(), screenSize.height());
+    const int bytesPerPixel = client->clientBytesPerPixel();
+    const QPixmap originalPixMap = screen->grabWindow(0,0,0,screenSize.width(), screenSize.height());
     const QImage screenImage = originalPixMap.toImage();
 
     const QRfbRect rect(0,0,screenSize.width(),screenSize.height());
@@ -158,4 +160,5 @@ void QRfbRawEncoder::write()
         screendata += linestep;
     }
     socket->flush();
+
 }
