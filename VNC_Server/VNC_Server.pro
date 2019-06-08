@@ -29,12 +29,14 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
     qvncserver.cpp \
-    qvnc_connection.cpp
+    qvnc_connection.cpp \
+    qvnc_screen.cpp
 
 HEADERS += \
         mainwindow.h \
     qvncserver.h \
-    qvnc_connection.h
+    qvnc_connection.h \
+    qvnc_screen.h
 
 FORMS += \
         mainwindow.ui
