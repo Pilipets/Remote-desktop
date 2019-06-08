@@ -2,6 +2,7 @@
 #include "qvncserver.h"
 #include <QtEndian>
 #include <QtCore>
+#include "qvnc_screen.h"
 #include<QPixmap>
 void QRfbPixelFormat::read(QTcpSocket *s)
 {
@@ -126,36 +127,61 @@ bool QRfbFrameBufferUpdateRequest::read(QTcpSocket *s)
 
 void QRfbRawEncoder::write()
 {
-    QScreen* screen = server->workingScreen();
-    QSize screenSize = screen->geometry().size();
+    QVNCDirtyMap *map = server->dirtyMap();
     QTcpSocket *socket = server->clientSocket();
+
     const int bytesPerPixel = server->clientBytesPerPixel();
+    QSize screenSize = server->screen()->geometry().size();
+
+    // create a region from the dirty rects and send the region's merged rects.
+    QRegion rgn;
+    if (map) {
+        for (int y = 0; y < map->mapHeight; ++y) {
+            for (int x = 0; x < map->mapWidth; ++x) {
+                if (!map->dirty(x, y))
+                    continue;
+                rgn += QRect(x * MAP_TILE_SIZE, y * MAP_TILE_SIZE,
+                             MAP_TILE_SIZE, MAP_TILE_SIZE);
+                map->setClean(x, y);
+            }
+        }
+
+        rgn &= QRect(0, 0, screenSize.width(),
+                     screenSize.height());
+    }
+
+    const QVector<QRect> rects = rgn.rects();
 
     const char tmp[2] = { 0, 0 }; // msg type, padding
     socket->write(tmp, sizeof(tmp));
 
-
-    const quint16 count = qToBigEndian(quint16(1)); //rectangle amount
+    const quint16 count = qToBigEndian(quint16(rects.size()));
     socket->write((char *)&count, sizeof(count));
 
+    if (rects.size() <= 0) {
+        return;
+    }
 
+    const QImage *screenImage = server->screenImage();
 
-    QPixmap originalPixMap = screen->grabWindow(0,0,0,screenSize.width(), screenSize.height());
-    const QImage screenImage = originalPixMap.toImage();
+    for (int i = 0; i < rects.size(); ++i) {
+        const QRect tileRect = rects.at(i);
+        const QRfbRect rect(tileRect.x(), tileRect.y(),
+                            tileRect.width(), tileRect.height());
+        rect.write(socket);
+        const quint32 encoding = qToBigEndian(0); // raw encoding
+        socket->write((char *)&encoding, sizeof(encoding));
 
-    const QRfbRect rect(0,0,screenSize.width(),screenSize.height());
-    rect.write(socket);
+        int linestep = screenImage->bytesPerLine();
+        const uchar *screendata = screenImage->scanLine(rect.y)
+                + rect.x * screenImage->depth() / 8;
 
-    const quint32 encoding = qToBigEndian(0); // raw encoding
-    socket->write((char *)&encoding, sizeof(encoding));
-
-    int linestep = screenImage.bytesPerLine();
-    const uchar *screendata = screenImage.scanLine(rect.y) + rect.x * screenImage.depth() / 8;
-
-    for (int i = 0; i < rect.h; ++i) {
-        qApp->processEvents();
-        socket->write((const char*)screendata, rect.w * bytesPerPixel);
-        screendata += linestep;
+        for (int i = 0; i < rect.h; ++i) {
+            socket->write((const char*)screendata, rect.w * bytesPerPixel);
+            screendata += linestep;
+        }
+        if (socket->state() == QAbstractSocket::UnconnectedState)
+            break;
     }
     socket->flush();
 }

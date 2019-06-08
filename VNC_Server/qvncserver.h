@@ -9,51 +9,62 @@
 #include<QByteArray>
 #include <QScreen>
 #include <QTimer>
+#include "qvnc_connection.h"
 
 class QRfbEncoder;
-#include "qvnc_connection.h"
+class QVNCScreen;
+class QVNCDirtyMap;
 class QVNCServer : public QObject
 {
     Q_OBJECT
 public:
-    QVNCServer(QScreen* screen);
+    QVNCServer(QVNCScreen* qvnc_screen);
     ~QVNCServer();
 
-    bool isConnected() const { return state == Connected; }
-    QTcpSocket* clientSocket() const { return client; }
-    int clientBytesPerPixel() const {return pixelFormat.bitsPerPixel / 8;}
-    QScreen* workingScreen() const {return screen;}
+    void setDirty();
+    inline bool isConnected() const { return state == Connected; }
+    inline void setRefreshRate(int rate) { refreshRate = rate; }
 
+    enum ClientMsg {FramebufferUpdateRequest = 3};
+    enum ServerMsg { FramebufferUpdate = 0};
+
+    inline int clientBytesPerPixel() const {
+        return pixelFormat.bitsPerPixel / 8;
+    }
+
+    inline QVNCScreen* screen() const { return qvnc_screen; }
+    inline QVNCDirtyMap* dirtyMap() const { return qvnc_screen->dirtyMap(); }
+
+    inline QTcpSocket* clientSocket() const { return client; }
+    QImage *screenImage() const;
 private slots:
     void newConnection();
     void readClient();
     void discardClient();
     void checkUpdate();
 private:
-
-    void init(quint16 port);
     void fillNetworkInfo(quint16 port);
     void frameBufferUpdateRequest();
 private:
-    enum ClientMsg {FramebufferUpdateRequest = 3};
-
-    enum ServerMsg { FramebufferUpdate = 0};
-
+    void init(quint16 port);
     enum ClientState { Unconnected, Protocol, Init, Connected };
-    ClientState state;
 
+    QTimer *timer;
     QTcpServer* serverSocket;
     QTcpSocket* client;
+    ClientState state;
+    QVNCScreen *qvnc_screen;
+
+    bool handleMsg;
+    quint8 msgType;
     QRfbPixelFormat pixelFormat;
+    bool wantUpdate;
+
+    int refreshRate;
     QRfbEncoder *encoder;
-    QScreen *screen;
 
     QString m_ip;
     quint16 m_port;
-    bool handleMsg;
-    quint8 msgType;
-    bool wantUpdate;
-
 public:
     inline QString getIP(){return m_ip;}
     inline quint16 getPort() {return  m_port;}

@@ -2,20 +2,29 @@
 #include <QDebug>
 #include <QtEndian>
 #include <QNetworkInterface>
-
-QVNCServer::QVNCServer(QScreen *screen) : client(nullptr)
+#include "vnc_map.h"
+QVNCServer::QVNCServer(QVNCScreen *screen) :
+    qvnc_screen(screen)
 {
-    this->screen = screen;
     init(5900);
 }
 
 void QVNCServer::init(quint16 port)
 {
-    encoder = new QRfbRawEncoder(this);
     qDebug() << "QVNCServer::init" << port;
-    state = Unconnected;
-    handleMsg = false;
 
+    handleMsg = false;
+    client = 0;
+    state = Unconnected;
+
+    refreshRate = 25;
+    //Check update is checking whether dirty map was changed
+    //Timer is needed to maintain refreshRate and not to check updates very often
+    timer = new QTimer(this);
+    timer->setSingleShot(true);
+    connect(timer, SIGNAL(timeout()), this, SLOT(checkUpdate()));
+
+    //encoder = new QRfbRawEncoder(this);
     serverSocket = new QTcpServer(this);
     if (!serverSocket->listen(QHostAddress::Any, port))
         qDebug() << "QVNCServer could not connect:" << serverSocket->errorString();
@@ -41,8 +50,11 @@ void QVNCServer::checkUpdate()
     if (!wantUpdate)
             return;
 
-    encoder->write();
-    wantUpdate = false;
+    if (dirtyMap()->numDirty > 0) {
+        if (encoder)
+            encoder->write();
+        wantUpdate = false;
+    }
 }
 
 void QVNCServer::frameBufferUpdateRequest()
@@ -59,6 +71,7 @@ void QVNCServer::frameBufferUpdateRequest()
         qDebug() << "Height: " << ev.rect.h;
 
         if (!ev.incremental) {
+            //qvnc_screen->d_ptr->setDirty(r, true);
             //Mark the area from ev as missed by making screen dirty at that area
         }
         wantUpdate = true;
@@ -80,12 +93,17 @@ void QVNCServer::newConnection()
     handleMsg = false;
     wantUpdate = false;
 
+    timer->start(1000/refreshRate); //send first screen image to the client
+    dirtyMap()->reset();
+
     // send protocol version
     const char *proto = "RFB 003.008\n";
     client->write(proto, 12);
     state = Protocol;
 
     qDebug() << "RFB protocol has send\n";
+
+    encoder = new QRfbRawEncoder(this);
 }
 
 void QVNCServer::readClient()
@@ -126,8 +144,8 @@ void QVNCServer::readClient()
             format.greenShift = 8;
             format.blueShift = 0;
 
-            sim.width = screen->geometry().width();//qvnc_screen->geometry().width();
-            sim.height = screen->geometry().height();//qvnc_screen->geometry().height();
+            sim.width = qvnc_screen->geometry().width();//qvnc_screen->geometry().width();
+            sim.height = qvnc_screen->geometry().height();//qvnc_screen->geometry().height();
             sim.setName("Qt MAC VNC Server");
             sim.write(client);
 
@@ -167,16 +185,34 @@ void QVNCServer::discardClient()
         disconnect(client,SIGNAL(disconnected()),this,SLOT(discardClient()));
         client->disconnect();
         client->deleteLater();
-        client = nullptr;
+        //client = nullptr;
     }
     qDebug() << "Client has disconnected\n";
 }
 
 QVNCServer::~QVNCServer()
 {
-    disconnect(serverSocket, SIGNAL(newConnection()), this, SLOT(newConnection()));
+    /*disconnect(serverSocket, SIGNAL(newConnection()), this, SLOT(newConnection()));
     discardClient();
     serverSocket->close();
     delete serverSocket;
-    delete encoder;
+    delete encoder;*/
+    delete  encoder;
+    encoder = 0;
+    delete client;
+    client = 0;
+}
+
+//
+void QVNCServer::setDirty()
+{
+    if (state == Connected && !timer->isActive() &&
+            (dirtyMap()->numDirty > 0)) {
+        timer->start();
+    }
+}
+
+QImage *QVNCServer::screenImage() const
+{
+    return qvnc_screen->image();
 }

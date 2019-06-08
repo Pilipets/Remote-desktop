@@ -30,12 +30,13 @@ SOURCES += \
         mainwindow.cpp \
     qvncserver.cpp \
     qvnc_connection.cpp \
-    qvnc_screen.cpp
+    vnc_map.cpp
 
 HEADERS += \
         mainwindow.h \
     qvncserver.h \
     qvnc_connection.h \
+    vnc_map.h \
     qvnc_screen.h
 
 FORMS += \
