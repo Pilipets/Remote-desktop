@@ -1,12 +1,16 @@
 #include "qvncviewer.h"
 #include<QtNetwork/QHostAddress>
 #include <QPainter>
-QVNCViewer::QVNCViewer(QWidget *parent) : QWidget(parent)
+
+QVNCViewer::QVNCViewer(QWidget *parent):
+    QWidget(parent), m_state(Disconnected), m_msgType(0), m_handleMsg(false),
+    frameBufferWidth(0), frameBufferHeight(0)
 {
+    connect(this, SIGNAL(frameBufferUpdated()), this, SLOT(sendFrameBufferUpdateRequest()));
     server = new QTcpSocket();
-    isFrameBufferUpdating = true;
 
     connect(server, &QTcpSocket::disconnected, this, &QVNCViewer::disconnectFromVncServer);
+    connect(server, SIGNAL(readyRead()), this, SLOT(readServer()));
 }
 
 QVNCViewer::~QVNCViewer()
@@ -21,64 +25,21 @@ bool QVNCViewer::connectToVncServer(QString ip, quint16 port)
     server->connectToHost(QHostAddress(ip), port);
     if(server->waitForConnected(5000)){
         qDebug() << "Connected to Server\n";
-        server->waitForReadyRead();
-
-        char proto[13];
-        server->read(proto, 12);
-        proto[12] = '\0';
-        qDebug("Server protocol version %s", proto);
-        server->write("RFB 003.007\n");
-        server->waitForReadyRead();
-
-        // No authentication
-        quint32 auth;
-        server->read((char *)&auth, sizeof(auth));
-
-        quint8 shared = 0;
-        server->write((char *)&shared, sizeof(shared));
-
-        server->waitForReadyRead();
-
-        QRfbServerInit response;
-        response.read(server);
-
-        frameBufferWidth = response.width;
-        frameBufferHeight = response.height;
-        pixelFormat = response.format;
-
-        qDebug() << "Width: " << frameBufferWidth;
-        qDebug() << "Height: " << frameBufferHeight;
-
-        // Pixel Format
-        // ***************************
-        qDebug() << "Bits per pixel: " << pixelFormat.bitsPerPixel;
-        qDebug() << "Depth: " << pixelFormat.depth;
-        qDebug() << "Big Endian: " << pixelFormat.bigEndian;
-        qDebug() << "True Color: " << pixelFormat.trueColor;
-        qDebug() << "Red Max: " << pixelFormat.redBits;
-        qDebug() << "Green Max: " << pixelFormat.greenBits;
-        qDebug() << "Blue Max: " << pixelFormat.blueBits;
-        qDebug() << "Red Shift: " << pixelFormat.redShift;
-        qDebug() << "Green Shift: " << pixelFormat.greenShift;
-        qDebug() << "Blue Shift: " << pixelFormat.blueShift;
-
-        qDebug() << "Name: " << response.name << "\n";
+        m_state = Protocol;
+        return true;
     }
-    else
-    {
+    else {
         qDebug() << "Not connected to " << ip;
         qDebug() << server->errorString();
+        m_state = Disconnected;
         return false;
     }
-    screen = QImage(frameBufferWidth, frameBufferHeight, QImage::Format_RGB32);
-    startFrameBufferUpdate();
-    return true;
 }
 
 void QVNCViewer::disconnectFromVncServer()
 {
-    disconnect(server, SIGNAL(readyRead()), this, SLOT(onServerMessage()));
     server->close();
+    m_state = Disconnected;
 }
 
 void QVNCViewer::paintEvent(QPaintEvent *)
@@ -95,49 +56,27 @@ void QVNCViewer::paintEvent(QPaintEvent *)
     painter.end();
 }
 
-void QVNCViewer::onServerMessage()
+void QVNCViewer::handleFrameBufferUpdate()
 {
-    disconnect(server, SIGNAL(readyRead()), this, SLOT(onServerMessage()));
-
     QByteArray response;
-    int noOfRects;
-    response = server->read(1);
-    qDebug() << "read Server " << response.at(0);
-    switch(response.at(0))
-    {
-
-    // ***************************************************************************************
-    // ***************************** Frame Buffer Update *************************************
-    // ***************************************************************************************
-    case FramebufferUpdate:
-
+    if(server->bytesAvailable() >= 3){
         response = server->read(1); // padding
         response = server->read(2); // number of rectangles
-        noOfRects = qMakeU16(response.at(0), response.at(1));
+        quint16 noOfRects = qMakeU16(response.at(0), response.at(1));
 
         for(int i=0; i<noOfRects; i++)
         {
+            QRfbRect rect;
+            rect.read(server);
 
-            qApp->processEvents();
-            response = server->read(2);
-            int xPosition = qMakeU16(response.at(0), response.at(1));
-            response = server->read(2);
-            int yPosition = qMakeU16(response.at(0), response.at(1));
-            response = server->read(2);
-            int width = qMakeU16(response.at(0), response.at(1));
-            response = server->read(2);
-            int height = qMakeU16(response.at(0), response.at(1));
             response = server->read(4);
             int encodingType = qMakeU32(response.at(0), response.at(1), response.at(2), response.at(3));
-
-            QImage image(width, height, QImage::Format_RGB32);
+            QImage image(rect.w, rect.h, QImage::Format_RGB32);
 
             if(encodingType == 0)
             {
-
-                int noOfBytes = width * height * (pixelFormat.bitsPerPixel / 8);
+                int noOfBytes = rect.w * rect.h * (pixelFormat.bitsPerPixel / 8);
                 QByteArray pixelsData;
-
                 do
                 {
                     qApp->processEvents();
@@ -148,13 +87,12 @@ void QVNCViewer::onServerMessage()
                 while(noOfBytes > 0);
 
                 uchar* img_pointer = image.bits();
-
                 int pixel_byte_cnt = 0;
-                for(int i=0; i<height; i++)
+                for(int i=0; i<rect.h; i++)
                 {
                     qApp->processEvents();
 
-                    for(int j=0; j<width; j++)
+                    for(int j=0; j<rect.w; j++)
                     {
                         // The order of the colors is BGR (not RGB)
                         img_pointer[0] = pixelsData.at(pixel_byte_cnt);
@@ -169,19 +107,94 @@ void QVNCViewer::onServerMessage()
             }
 
             QPainter painter(&screen);
-            painter.drawImage(xPosition, yPosition, image);
+            painter.drawImage(rect.x, rect.y, image);
             painter.end();
 
             repaint();
         }
-
-        //this->sendFrameBufferUpdateRequest();
-        emit frameBufferUpdated();
-        break;
-
+        m_handleMsg = false;
+        this->sendFrameBufferUpdateRequest();
     }
+}
 
-    connect(server, SIGNAL(readyRead()), this, SLOT(onServerMessage()));
+void QVNCViewer::readServer()
+{
+    QRfbServerInit response;
+    qDebug() << "readServer" << m_state;
+    switch (m_state) {
+    case Disconnected:
+        break;
+    case Protocol:
+        if(server->bytesAvailable() >= 12){
+            char proto[13];
+            server->read(proto, 12);
+            proto[12] = '\0';
+
+            qDebug("Server protocol version %s", proto);
+            server->write("RFB 003.007\n");
+            m_state = Authentication;
+        }
+        break;
+    case Authentication:
+        if(server->bytesAvailable() >= 1){
+            quint32 auth;
+            server->read((char *)&auth, sizeof(auth));
+
+            quint8 shared = 0;
+            server->write((char *)&shared, sizeof(shared));
+
+            m_state = Init;
+        }
+        break;
+    case Init:
+        if(response.read(server)){
+            frameBufferWidth = response.width;
+            frameBufferHeight = response.height;
+            pixelFormat = response.format;
+
+            qDebug() << "Width: " << frameBufferWidth;
+            qDebug() << "Height: " << frameBufferHeight;
+
+            // Pixel Format
+            // ***************************
+            qDebug() << "Bits per pixel: " << pixelFormat.bitsPerPixel;
+            qDebug() << "Depth: " << pixelFormat.depth;
+            qDebug() << "Big Endian: " << pixelFormat.bigEndian;
+            qDebug() << "True Color: " << pixelFormat.trueColor;
+            qDebug() << "Red Max: " << pixelFormat.redBits;
+            qDebug() << "Green Max: " << pixelFormat.greenBits;
+            qDebug() << "Blue Max: " << pixelFormat.blueBits;
+            qDebug() << "Red Shift: " << pixelFormat.redShift;
+            qDebug() << "Green Shift: " << pixelFormat.greenShift;
+            qDebug() << "Blue Shift: " << pixelFormat.blueShift;
+
+            qDebug() << "Name: " << response.name << "\n";
+            screen = QImage(frameBufferWidth, frameBufferHeight, QImage::Format_RGB32);
+            m_state = Connected;
+            this->sendFrameBufferUpdateRequest();
+        }
+        break;
+    case Connected:
+        do {
+            if (!m_handleMsg) {
+                server->read((char *)&m_msgType, 1);
+                m_handleMsg = true;
+            }
+            if (m_handleMsg) {
+                switch (m_msgType ) {
+                case FramebufferUpdate:
+                    handleFrameBufferUpdate();
+                    break;
+                default:
+                    qWarning("Unknown message type: %d", (int)m_msgType);
+                    m_handleMsg = false;
+                }
+            }
+        } while (!m_handleMsg && server->bytesAvailable());
+        break;
+    default:
+        break;
+    }
 }
 
 void QVNCViewer::sendFrameBufferUpdateRequest()
@@ -201,7 +214,5 @@ void QVNCViewer::sendFrameBufferUpdateRequest()
     frameBufferUpdateRequest[9] = (frameBufferHeight >> 0) & 0xFF; // height
 
     server->write(frameBufferUpdateRequest);
-
-    connect(server, SIGNAL(readyRead()), this, SLOT(onServerMessage()));
 }
 

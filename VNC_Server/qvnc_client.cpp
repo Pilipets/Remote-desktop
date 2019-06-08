@@ -24,6 +24,7 @@ QVncClient::QVncClient(QTcpSocket *clientSocket, QVncServer *server):
 
 QVncClient::~QVncClient()
 {
+    //m_clientSocket->disconnect();
     m_clientSocket->disconnect();
     m_clientSocket->deleteLater();
     delete m_encoder;

@@ -10,6 +10,22 @@ quint32 qMakeU32(quint16 l, quint16 h);
 
 quint32 qMakeU32(quint8 lowest, quint8 low, quint8 high, quint8 highest);
 
+class QRfbRect
+{
+public:
+    QRfbRect() {}
+    QRfbRect(quint16 _x, quint16 _y, quint16 _w, quint16 _h) {
+        x = _x; y = _y; w = _w; h = _h;
+    }
+
+    void read(QTcpSocket *s);
+
+    quint16 x;
+    quint16 y;
+    quint16 w;
+    quint16 h;
+};
+
 class QRfbPixelFormat
 {
 public:
@@ -33,44 +49,17 @@ public:
 class QRfbServerInit
 {
 public:
-    QRfbServerInit() { name = nullptr; }
+    QRfbServerInit(): name(nullptr),len(0) {}
     ~QRfbServerInit() { delete[] name; }
 
-    int size() const { return QRfbPixelFormat::size() + 8 + strlen(name); }
-    void setName(const char *n);
-
-    void read(QTcpSocket *s);
-    void write(QTcpSocket *s);
+    bool read(QTcpSocket *s);
 
     quint16 width;
     quint16 height;
     QRfbPixelFormat format;
     char *name;
+    quint32 len;
 };
 
-class QRfbRect
-{
-public:
-    QRfbRect() {}
-    QRfbRect(quint16 _x, quint16 _y, quint16 _w, quint16 _h) {
-        x = _x; y = _y; w = _w; h = _h;
-    }
 
-    void read(QTcpSocket *s);
-    void write(QTcpSocket *s) const;
-
-    quint16 x;
-    quint16 y;
-    quint16 w;
-    quint16 h;
-};
-
-class QRfbFrameBufferUpdateRequest
-{
-public:
-    bool read(QTcpSocket *s);
-
-    char incremental;
-    QRfbRect rect;
-};
 #endif // QVNC_CONNECTION_H

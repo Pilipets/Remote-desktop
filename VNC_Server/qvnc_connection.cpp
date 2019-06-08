@@ -26,32 +26,6 @@ void QRfbRect::write(QTcpSocket *s) const
     s->write((char*)buf, 8);
 }
 
-void QRfbPixelFormat::read(QTcpSocket *s)
-{
-    char buf[16];
-    s->read(buf, 16);
-    bitsPerPixel = buf[0];
-    depth = buf[1];
-    bigEndian = buf[2];
-    trueColor = buf[3];
-
-    quint16 a = qFromBigEndian(*(quint16 *)(buf + 4));
-    redBits = 0;
-    while (a) { a >>= 1; redBits++; }
-
-    a = qFromBigEndian(*(quint16 *)(buf + 6));
-    greenBits = 0;
-    while (a) { a >>= 1; greenBits++; }
-
-    a = qFromBigEndian(*(quint16 *)(buf + 8));
-    blueBits = 0;
-    while (a) { a >>= 1; blueBits++; }
-
-    redShift = buf[10];
-    greenShift = buf[11];
-    blueShift = buf[12];
-}
-
 void QRfbPixelFormat::write(QTcpSocket *s)
 {
     char buf[16];
@@ -83,23 +57,6 @@ void QRfbServerInit::setName(const char *n)
     delete[] name;
     name = new char [strlen(n) + 1];
     strcpy(name, n);
-}
-
-void QRfbServerInit::read(QTcpSocket *s)
-{
-    s->read((char *)&width, 2);
-    width = qFromBigEndian(width);
-    s->read((char *)&height, 2);
-    height = qFromBigEndian(height);
-    format.read(s);
-
-    quint32 len;
-    s->read((char *)&len, 4);
-    len = qFromBigEndian(len);
-
-    name = new char [len + 1];
-    s->read(name, len);
-    name[len] = '\0';
 }
 
 void QRfbServerInit::write(QTcpSocket *s)
@@ -154,7 +111,7 @@ void QRfbRawEncoder::write()
     int linestep = screenImage.bytesPerLine();
     const uchar *screendata = screenImage.scanLine(rect.y) + rect.x * screenImage.depth() / 8;
 
-    for (int i = 0; i < rect.h; ++i) {
+    for (int i = 0; i < rect.h && socket->state() == QTcpSocket::ConnectedState; ++i) {
         qApp->processEvents();
         socket->write((const char*)screendata, rect.w * bytesPerPixel);
         screendata += linestep;

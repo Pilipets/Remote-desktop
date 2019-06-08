@@ -52,73 +52,27 @@ void QRfbPixelFormat::write(QTcpSocket *s)
     s->write(buf, 16);
 }
 
-
-void QRfbServerInit::setName(const char *n)
+bool QRfbServerInit::read(QTcpSocket *s)
 {
-    delete[] name;
-    name = new char [strlen(n) + 1];
-    strcpy(name, n);
-}
+    do{
+        if(len == 0 && s->bytesAvailable() >= 8){
+            s->read((char *)&width, 2);
+            width = qFromBigEndian(width);
+            s->read((char *)&height, 2);
+            height = qFromBigEndian(height);
+            format.read(s);
 
-void QRfbServerInit::read(QTcpSocket *s)
-{
-    s->read((char *)&width, 2);
-    width = qFromBigEndian(width);
-    s->read((char *)&height, 2);
-    height = qFromBigEndian(height);
-    format.read(s);
-
-    quint32 len;
-    s->read((char *)&len, 4);
-    len = qFromBigEndian(len);
-
-    name = new char [len + 1];
-    s->read(name, len);
-    name[len] = '\0';
-}
-
-void QRfbServerInit::write(QTcpSocket *s)
-{
-    quint16 t = qToBigEndian(width);
-    s->write((char *)&t, 2);
-    t = qToBigEndian(height);
-    s->write((char *)&t, 2);
-    format.write(s);
-    quint32 len = strlen(name);
-    len = qToBigEndian(len);
-    s->write((char *)&len, 4);
-    s->write(name, strlen(name));
-}
-
-void QRfbRect::read(QTcpSocket *s)
-{
-    quint16 buf[4];
-    s->read((char*)buf, 8);
-    x = qFromBigEndian(buf[0]);
-    y = qFromBigEndian(buf[1]);
-    w = qFromBigEndian(buf[2]);
-    h = qFromBigEndian(buf[3]);
-}
-
-void QRfbRect::write(QTcpSocket *s) const
-{
-    quint16 buf[4];
-    buf[0] = qToBigEndian(x);
-    buf[1] = qToBigEndian(y);
-    buf[2] = qToBigEndian(w);
-    buf[3] = qToBigEndian(h);
-    s->write((char*)buf, 8);
-}
-
-bool QRfbFrameBufferUpdateRequest::read(QTcpSocket *s)
-{
-    if (s->bytesAvailable() < 9)
-        return false;
-
-    s->read(&incremental, 1);
-    rect.read(s);
-
-    return true;
+            s->read((char *)&len, 4);
+            len = qFromBigEndian(len);
+        }
+        else if(len > 0 && s->bytesAvailable() >= len){
+            name = new char [len + 1];
+            s->read(name, len);
+            name[len] = '\0';
+            return true;
+        }
+    }while(s->bytesAvailable() > 0);
+    return false;
 }
 
 quint16 qMakeU16(quint8 l, quint8 h)
@@ -148,4 +102,14 @@ quint32 qMakeU32(quint8 lowest, quint8 low, quint8 high, quint8 highest)
     result_arr[2] = low;
     result_arr[3] = lowest;
     return result;
+}
+
+void QRfbRect::read(QTcpSocket *s)
+{
+    quint16 buf[4];
+    s->read((char*)buf, 8);
+    x = qFromBigEndian(buf[0]);
+    y = qFromBigEndian(buf[1]);
+    w = qFromBigEndian(buf[2]);
+    h = qFromBigEndian(buf[3]);
 }

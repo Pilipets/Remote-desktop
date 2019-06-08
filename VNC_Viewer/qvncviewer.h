@@ -16,35 +16,33 @@ public:
 
     bool connectToVncServer(QString ip, quint16 port);
     void disconnectFromVncServer();
-    void startFrameBufferUpdate()
-    {
-        connect(this, SIGNAL(frameBufferUpdated()), this, SLOT(sendFrameBufferUpdateRequest()));
-        sendFrameBufferUpdateRequest();
-    }
 
-    void stopFrameBufferUpdate()
-    {
-        disconnect(this, SIGNAL(frameBufferUpdated()), this, SLOT(sendFrameBufferUpdateRequest()));
-    }
-
-protected:
+private:
     void paintEvent(QPaintEvent *) override;
+
+    void handleFrameBufferUpdate();
 private slots:
-    void onServerMessage();
+    void readServer();
     void sendFrameBufferUpdateRequest();
 signals:
     void frameBufferUpdated();
 
 private:
     enum ServerMsg { FramebufferUpdate = 0};
-    bool isFrameBufferUpdating;
+    enum ClientState {
+        Disconnected, Protocol, Authentication, Init, Connected};
 
     QTcpSocket* server;
 
     quint16 frameBufferWidth;
     quint16 frameBufferHeight;
-    QRfbPixelFormat pixelFormat;
     QImage screen;
+
+    ClientState m_state;
+    quint8 m_msgType;
+    bool m_handleMsg;
+    QRfbPixelFormat pixelFormat;
+
 
 };
 
