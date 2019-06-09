@@ -11,6 +11,7 @@ QVncClient::QVncClient(QTcpSocket *clientSocket, QVncServer *server):
     m_encoder(nullptr),m_msgType(0),m_handleMsg(false),
     m_wantUpdate(false), m_protocolVersion(V3_8)
 {
+
     connect(m_clientSocket,SIGNAL(readyRead()),this,SLOT(readClient()));
     connect(m_clientSocket,SIGNAL(disconnected()),this,SLOT(discardClient()));
 

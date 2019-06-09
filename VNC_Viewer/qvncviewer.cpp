@@ -7,6 +7,7 @@ QVNCViewer::QVNCViewer(QWidget *parent):
     frameBufferWidth(0), frameBufferHeight(0)
 {
     connect(this, SIGNAL(frameBufferUpdated()), this, SLOT(sendFrameBufferUpdateRequest()));
+
     server = new QTcpSocket();
 
     connect(server, &QTcpSocket::disconnected, this, &QVNCViewer::disconnectFromVncServer);
@@ -106,14 +107,15 @@ void QVNCViewer::handleFrameBufferUpdate()
                 }
             }
 
-            QPainter painter(&screen);
-            painter.drawImage(rect.x, rect.y, image);
-            painter.end();
+            //QPainter painter(&screen);
+            //painter.drawImage(rect.x, rect.y, image);
+            //painter.end();
+            screen = std::move(image);
 
             repaint();
         }
         m_handleMsg = false;
-        this->sendFrameBufferUpdateRequest();
+        emit frameBufferUpdated();
     }
 }
 

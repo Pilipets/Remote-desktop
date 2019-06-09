@@ -112,7 +112,7 @@ void QRfbRawEncoder::write()
     const uchar *screendata = screenImage.scanLine(rect.y) + rect.x * screenImage.depth() / 8;
 
     for (int i = 0; i < rect.h && socket->state() == QTcpSocket::ConnectedState; ++i) {
-        qApp->processEvents();
+        //qApp->processEvents();
         socket->write((const char*)screendata, rect.w * bytesPerPixel);
         screendata += linestep;
     }
