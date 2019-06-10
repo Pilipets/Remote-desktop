@@ -6,6 +6,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    ui->viewer_widget->setFocus();
+    ui->viewer_widget->setMouseTracking(true);
 
     connect(ui->connect_btn, SIGNAL(clicked()),this, SLOT(connect_btn_clicked()));
     connect(ui->disconnect_btn, SIGNAL(clicked()), this, SLOT(disconnect_btn_clicked()));
@@ -29,10 +31,12 @@ void MainWindow::connect_btn_clicked()
     qDebug() << ip << ": " << port << endl;
 
     ui->viewer_widget->connectToVncServer(ip,port);
+    ui->viewer_widget->setFocus();
 }
 
 void MainWindow::disconnect_btn_clicked()
 {
     qDebug() << "Disconnect button pressed\n";
     ui->viewer_widget->disconnectFromVncServer();
+    ui->viewer_widget->setFocus();
 }

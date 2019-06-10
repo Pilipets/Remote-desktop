@@ -22,6 +22,9 @@ QVNCViewer::~QVNCViewer()
 
 bool QVNCViewer::connectToVncServer(QString ip, quint16 port)
 {
+    if(m_state != Disconnected)
+        return false;
+
     qDebug() << "Trying connect to " << ip << port;
     server->connectToHost(QHostAddress(ip), port);
     if(server->waitForConnected(5000)){
@@ -39,8 +42,11 @@ bool QVNCViewer::connectToVncServer(QString ip, quint16 port)
 
 void QVNCViewer::disconnectFromVncServer()
 {
+    if(m_state != Disconnected){
+    //server->disconnectFromHost();
     server->close();
     m_state = Disconnected;
+    }
 }
 
 void QVNCViewer::paintEvent(QPaintEvent *)
@@ -57,6 +63,105 @@ void QVNCViewer::paintEvent(QPaintEvent *)
     painter.end();
 }
 
+void QVNCViewer::keyPressEvent(QKeyEvent *event)
+{
+    if(m_state != Connected)
+        return;
+
+    QByteArray message(8, 0);
+
+    message[0] = 4; // keyboard event
+    message[1] = 1; // down = 1 (press)
+    message[2] = message[3] = 0; // padding
+
+    qint32 key = event->key();
+
+    //check for capital letters
+    //quint32 key = translateRfbKey(event->key(), event->modifiers());
+
+    message[4] = (key >> 24) & 0xFF;
+    message[5] = (key >> 16) & 0xFF;
+    message[6] = (key >> 8) & 0xFF;
+    message[7] = (key >> 0) & 0xFF;
+
+    server->write(message);
+}
+
+void QVNCViewer::keyReleaseEvent(QKeyEvent *event)
+{
+    if(m_state != Connected)
+        return;
+
+    QByteArray message(8, 0);
+
+    message[0] = 4; // keyboard event
+    message[1] = 0; // down = 0 (release)
+    message[2] = message[3] = 0; // padding
+
+    quint32 key = event->key();
+    //check for capital letters
+    //quint32 key = translateRfbKey(event->key(), event->modifiers());
+
+    message[4] = (key >> 24) & 0xFF;
+    message[5] = (key >> 16) & 0xFF;
+    message[6] = (key >> 8) & 0xFF;
+    message[7] = (key >> 0) & 0xFF;
+
+    server->write(message);
+}
+
+void QVNCViewer::mouseMoveEvent(QMouseEvent *event)
+{
+    if(m_state != Connected)
+        return;
+
+    QByteArray message(6, 0);
+    message[0] = 5; // mouse event
+
+    switch(event->button())
+    {
+    case Qt::LeftButton:
+        message[1] = 1;
+        break;
+
+    case Qt::MiddleButton:
+        message[1] = 2;
+        break;
+
+    case Qt::RightButton:
+        message[1] = 4;
+        break;
+
+    default:
+        message[1] = 0;
+        break;
+
+    }
+
+    quint16 posX = (double(event->pos().x()) / double(width())) * double(frameBufferWidth);
+    quint16 posY = (double(event->pos().y()) / double(height())) * double(frameBufferHeight);
+
+    message[2] = (posX >> 8) & 0xFF;
+    message[3] = (posX >> 0) & 0xFF;
+
+    message[4] = (posY >> 8) & 0xFF;
+    message[5] = (posY >> 0) & 0xFF;
+
+    server->write(message);
+}
+
+void QVNCViewer::mousePressEvent(QMouseEvent *event)
+{
+    setFocus();
+    this->mouseMoveEvent(event);
+}
+
+void QVNCViewer::mouseReleaseEvent(QMouseEvent *event)
+{
+    setFocus();
+    this->mouseMoveEvent(event);
+}
+
 void QVNCViewer::handleFrameBufferUpdate()
 {
     QByteArray response;
@@ -65,7 +170,7 @@ void QVNCViewer::handleFrameBufferUpdate()
         response = server->read(2); // number of rectangles
         quint16 noOfRects = qMakeU16(response.at(0), response.at(1));
 
-        for(int i=0; i<noOfRects; i++)
+        for(int i=0; i<noOfRects && server->state() == QTcpSocket::ConnectedState; i++)
         {
             QRfbRect rect;
             rect.read(server);
@@ -85,11 +190,11 @@ void QVNCViewer::handleFrameBufferUpdate()
                     pixelsData.append(temp);
                     noOfBytes -= temp.size();
                 }
-                while(noOfBytes > 0);
+                while(noOfBytes > 0 && server->state() == QTcpSocket::ConnectedState);
 
                 uchar* img_pointer = image.bits();
                 int pixel_byte_cnt = 0;
-                for(int i=0; i<rect.h; i++)
+                for(int i=0; i<rect.h && server->state() == QTcpSocket::ConnectedState; i++)
                 {
                     qApp->processEvents();
 

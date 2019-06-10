@@ -16,6 +16,9 @@ public:
     enum ClientMsg {
         SetPixelFormat = 0,
         FramebufferUpdateRequest = 3,
+        KeyEvent = 4,
+        PointerEvent = 5,
+        ClientCutText = 6
     };
 
     explicit QVncClient(QTcpSocket *clientSocket, QVncServer *server);
@@ -48,6 +51,8 @@ private:
     };
 
     void frameBufferUpdateRequest();
+    void keyEvent();
+    void pointerEvent();
 
     QVncServer *m_server;
     QTcpSocket *m_clientSocket;
@@ -59,6 +64,7 @@ private:
     bool m_handleMsg;
     QRfbPixelFormat m_pixelFormat;
 
+    Qt::KeyboardModifiers m_keymod;
     bool m_wantUpdate;
 
     ProtocolVersion m_protocolVersion;

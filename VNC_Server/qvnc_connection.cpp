@@ -6,6 +6,96 @@
 #include <QPixmap>
 #include <QDebug>
 #include <QApplication>
+#include <QKeySequence>
+#include <QString>
+
+static const struct {
+    int keysym;
+    int keycode;
+} keyMap[] = {
+    { 0xff08, Qt::Key_Backspace }, { 0xff09, Qt::Key_Tab       }, { 0xff0d, Qt::Key_Return    },
+    { 0xff1b, Qt::Key_Escape    }, { 0xff63, Qt::Key_Insert    }, { 0xffff, Qt::Key_Delete    },
+    { 0xff50, Qt::Key_Home      }, { 0xff57, Qt::Key_End       }, { 0xff55, Qt::Key_PageUp    },
+    { 0xff56, Qt::Key_PageDown  }, { 0xff51, Qt::Key_Left      }, { 0xff52, Qt::Key_Up        },
+    { 0xff53, Qt::Key_Right     }, { 0xff54, Qt::Key_Down      }, { 0xffbe, Qt::Key_F1        },
+    { 0xffbf, Qt::Key_F2        }, { 0xffc0, Qt::Key_F3        }, { 0xffc1, Qt::Key_F4        },
+    { 0xffc2, Qt::Key_F5        }, { 0xffc3, Qt::Key_F6        }, { 0xffc4, Qt::Key_F7        },
+    { 0xffc5, Qt::Key_F8        }, { 0xffc6, Qt::Key_F9        }, { 0xffc7, Qt::Key_F10       },
+    { 0xffc8, Qt::Key_F11       }, { 0xffc9, Qt::Key_F12       }, { 0xffe1, Qt::Key_Shift     },
+    { 0xffe2, Qt::Key_Shift     }, { 0xffe3, Qt::Key_Control   }, { 0xffe4, Qt::Key_Control   },
+    { 0xffe7, Qt::Key_Meta      }, { 0xffe8, Qt::Key_Meta      }, { 0xffe9, Qt::Key_Alt       },
+    { 0xffea, Qt::Key_Alt       }, { 0xffb0, Qt::Key_0         }, { 0xffb1, Qt::Key_1         },
+    { 0xffb2, Qt::Key_2         }, { 0xffb3, Qt::Key_3         }, { 0xffb4, Qt::Key_4         },
+    { 0xffb5, Qt::Key_5         }, { 0xffb6, Qt::Key_6         }, { 0xffb7, Qt::Key_7         },
+    { 0xffb8, Qt::Key_8         }, { 0xffb9, Qt::Key_9         }, { 0xff8d, Qt::Key_Return    },
+    { 0xffaa, Qt::Key_Asterisk  }, { 0xffab, Qt::Key_Plus      }, { 0xffad, Qt::Key_Minus     },
+    { 0xffae, Qt::Key_Period    }, { 0xffaf, Qt::Key_Slash     }, { 0xff95, Qt::Key_Home      },
+    { 0xff96, Qt::Key_Left      }, { 0xff97, Qt::Key_Up        }, { 0xff98, Qt::Key_Right     },
+    { 0xff99, Qt::Key_Down      }, { 0xff9a, Qt::Key_PageUp    }, { 0xff9b, Qt::Key_PageDown  },
+    { 0xff9c, Qt::Key_End       }, { 0xff9e, Qt::Key_Insert    }, { 0xff9f, Qt::Key_Delete    },
+    { 0, 0 }
+};
+
+bool QRfbKeyEvent::read(QTcpSocket *s)
+{
+    if (s->bytesAvailable() < 7)
+        return false;
+
+    s->read(&down, 1);
+    quint16 tmp;
+    s->read((char *)&tmp, 2);  // padding
+    quint32 key;
+    s->read((char *)&key, 4);
+    key = qFromBigEndian(key);
+    unicode = 0;
+    keycode = 0;
+    int i = 0;
+    while (keyMap[i].keysym && !keycode) {
+        if (keyMap[i].keysym == (int)key)
+            keycode = keyMap[i].keycode;
+        i++;
+    }
+    if (keycode >= ' ' && keycode <= '~')
+        unicode = keycode;
+    if (!keycode) {
+        if (key <= 0xff) {
+            unicode = key;
+            if (key >= 'a' && key <= 'z')
+                keycode = Qt::Key_A + key - 'a';
+            else if (key >= ' ' && key <= '~')
+                keycode = Qt::Key_Space + key - ' ';
+        }
+    }
+
+    if(down & 1)
+        qDebug() << QKeySequence(keycode).toString();
+    return true;
+}
+
+bool QRfbPointerEvent::read(QTcpSocket *s)
+{
+    if (s->bytesAvailable() < 5)
+        return false;
+
+    char buttonMask;
+    s->read(&buttonMask, 1);
+    buttons = Qt::NoButton;
+    if (buttonMask & 1)
+        buttons |= Qt::LeftButton;
+    if (buttonMask & 2)
+        buttons |= Qt::MidButton;
+    if (buttonMask & 4)
+        buttons |= Qt::RightButton;
+
+    quint16 tmp;
+    s->read((char *)&tmp, 2);
+    x = qFromBigEndian(tmp);
+    s->read((char *)&tmp, 2);
+    y = qFromBigEndian(tmp);
+
+    return true;
+}
+
 void QRfbRect::read(QTcpSocket *s)
 {
     quint16 buf[4];
@@ -86,7 +176,7 @@ bool QRfbFrameBufferUpdateRequest::read(QTcpSocket *s)
 
 void QRfbRawEncoder::write()
 {
-    qDebug() << "QRfbRawEncoder::write()";
+    //qDebug() << "QRfbRawEncoder::write()";
     QTcpSocket *socket = client->clientSocket();
 
     const char tmp[2] = { 0, 0 }; // msg type, padding

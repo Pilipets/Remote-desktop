@@ -38,7 +38,7 @@ void QVncServer::discardClient(QVncClient *client)
 {
     qDebug() << "Client has disconnected\n";
     clients.removeOne(client);
-    delete client;
+    client->deleteLater();
 }
 
 void QVncServer::newConnection()

@@ -6,6 +6,9 @@
 #include <QScreen>
 #include <QCoreApplication>
 #include <QDebug>
+#include <QKeyEvent>
+#include <QApplication>
+
 QVncClient::QVncClient(QTcpSocket *clientSocket, QVncServer *server):
     QObject (server), m_server(server), m_clientSocket(clientSocket),
     m_encoder(nullptr),m_msgType(0),m_handleMsg(false),
@@ -39,7 +42,7 @@ QTcpSocket *QVncClient::clientSocket() const
 
 void QVncClient::readClient()
 {
-    qDebug() << "readClient" << m_state;
+    //qDebug() << "readClient" << m_state;
     switch (m_state) {
     case Disconnected:
         break;
@@ -114,6 +117,12 @@ void QVncClient::readClient()
                 case FramebufferUpdateRequest:
                     frameBufferUpdateRequest();
                     break;
+                case KeyEvent:
+                    keyEvent();
+                    break;
+                case PointerEvent:
+                    pointerEvent();
+                    break;
                 default:
                     qWarning("Unknown message type: %d", (int)m_msgType);
                     m_handleMsg = false;
@@ -145,7 +154,7 @@ void QVncClient::checkUpdate()
 
 void QVncClient::frameBufferUpdateRequest()
 {
-    qDebug() << "FramebufferUpdateRequest";
+    //qDebug() << "FramebufferUpdateRequest";
     QRfbFrameBufferUpdateRequest ev;
 
     if (ev.read(m_clientSocket)) {
@@ -156,6 +165,42 @@ void QVncClient::frameBufferUpdateRequest()
         }
         m_wantUpdate = true;
         checkUpdate();
+        m_handleMsg = false;
+    }
+}
+
+void QVncClient::keyEvent()
+{
+    QRfbKeyEvent ev;
+
+    if (ev.read(m_clientSocket)) {
+        if (ev.keycode == Qt::Key_Shift)
+            m_keymod = ev.down ? m_keymod | Qt::ShiftModifier :
+                                 m_keymod & ~Qt::ShiftModifier;
+        else if (ev.keycode == Qt::Key_Control)
+            m_keymod = ev.down ? m_keymod | Qt::ControlModifier :
+                                 m_keymod & ~Qt::ControlModifier;
+        else if (ev.keycode == Qt::Key_Alt)
+            m_keymod = ev.down ? m_keymod | Qt::AltModifier :
+                                 m_keymod & ~Qt::AltModifier;
+        if (ev.unicode || ev.keycode){
+            qDebug() << "Process button event" << ev.keycode;
+            //QKeyEvent key(ev.down ? QEvent::KeyPress : QEvent::KeyRelease, ev.keycode,m_keymod, QString(ev.unicode));
+            //QCoreApplication::postEvent (receiver, event);
+            //QWindowSystemInterface::handleKeyEvent(0, ev.down ? QEvent::KeyPress : QEvent::KeyRelease, ev.keycode, m_keymod, QString(ev.unicode));
+        }
+
+        m_handleMsg = false;
+    }
+}
+
+void QVncClient::pointerEvent()
+{
+    QRfbPointerEvent ev;
+    if (ev.read(m_clientSocket)) {
+        const QPoint pos = m_server->screen()->geometry().topLeft() + QPoint(ev.x, ev.y);
+        qDebug() << "Mouse moved to " << pos.x() << " " << pos.y();
+        //QWindowSystemInterface::handleMouseEvent(0, pos, pos, ev.buttons, QGuiApplication::keyboardModifiers());
         m_handleMsg = false;
     }
 }

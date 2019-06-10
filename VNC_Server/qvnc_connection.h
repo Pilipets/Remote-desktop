@@ -5,6 +5,26 @@
 #include<QByteArray>
 class QTcpSocket;
 class QVncClient;
+
+class QRfbKeyEvent
+{
+public:
+    bool read(QTcpSocket *s);
+    char down;
+    int  keycode;
+    int  unicode;
+};
+
+class QRfbPointerEvent
+{
+public:
+    bool read(QTcpSocket *s);
+
+    Qt::MouseButtons buttons;
+    quint16 x;
+    quint16 y;
+};
+
 class QRfbRect
 {
 public:

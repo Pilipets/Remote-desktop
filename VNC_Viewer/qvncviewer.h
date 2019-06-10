@@ -7,6 +7,7 @@
 #include <QImage>
 #include <QWidget>
 #include <QtCore>
+#include <QKeyEvent>
 class QVNCViewer : public QWidget
 {
     Q_OBJECT
@@ -19,6 +20,11 @@ public:
 
 private:
     void paintEvent(QPaintEvent *) override;
+    void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
 
     void handleFrameBufferUpdate();
 private slots:
