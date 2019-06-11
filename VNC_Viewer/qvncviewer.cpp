@@ -12,6 +12,8 @@ QVNCViewer::QVNCViewer(QWidget *parent):
 
     connect(server, &QTcpSocket::disconnected, this, &QVNCViewer::disconnectFromVncServer);
     connect(server, SIGNAL(readyRead()), this, SLOT(readServer()));
+
+    setMouseTracking(true);
 }
 
 QVNCViewer::~QVNCViewer()

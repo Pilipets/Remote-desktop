@@ -33,9 +33,7 @@ void StartViewerWindow::on_connectBtn_clicked()
     ui->statusBar->showMessage("Connecting to the " + address, 3000);
     if(streamWindow->getViewer()->connectToVncServer(ip,port)){
         ui->statusBar->showMessage("Connected to the " + address, 3000);
-        this->hide();
-        streamWindow->show();
-        streamWindow->getViewer()->setFocus();
+        switchToStreamWindow();
     }
     else {
         ui->statusBar->showMessage("Connection refused", 3000);
@@ -60,11 +58,17 @@ void StartViewerWindow::on_showScreenBtn_clicked()
     if(streamWindow->getViewer()->isConnected())
     {
         streamWindow->getViewer()->startFrameBufferUpdate();
-        this->hide();
-        streamWindow->show();
-        streamWindow->getViewer()->setFocus();
+        switchToStreamWindow();
     }
     else {
         ui->statusBar->showMessage("You are not connected to the server", 3000);
     }
+}
+
+void StartViewerWindow::switchToStreamWindow()
+{
+    this->hide();
+    streamWindow->show();
+    streamWindow->getViewer()->setFocus();
+    streamWindow->getViewer()->setMouseTracking(true);
 }

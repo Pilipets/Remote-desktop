@@ -26,6 +26,8 @@ private:
     Ui::StartViewerWindow *ui;
 
     StreamViewerWindow* streamWindow;
+
+    void switchToStreamWindow();
 };
 
 #endif // STARTVIEWERWINDOW_H
