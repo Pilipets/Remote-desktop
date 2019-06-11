@@ -13,27 +13,16 @@ StreamViewerWindow::~StreamViewerWindow()
     delete ui;
 }
 
-void StreamViewerWindow::connect(const QString &address)
+QVNCViewer *StreamViewerWindow::getViewer() const
 {
-    QStringList parsed_list = address.split(':');
-    QString ip = parsed_list[0];
-    quint16 port = parsed_list[1].toInt();
-
-    qDebug() << "Connect button pressed\n";
-    qDebug() << ip << ": " << port << endl;
-
-    if(ui->viewer_widget->connectToVncServer(ip,port))
-    {
-        QMainWindow* p = static_cast<QMainWindow*>(this->parent());
-        p->setVisible(false);
-        this->setVisible(true);
-    }
+    return ui->viewer_widget;
 }
 
 void StreamViewerWindow::closeEvent(QCloseEvent *event)
 {
-    ui->viewer_widget->disconnectFromVncServer();
+    ui->viewer_widget->stopFrameBufferUpdate();
     QMainWindow* p = static_cast<QMainWindow*>(this->parent());
     this->setVisible(false);
     p->setVisible(true);
+    p->setFocus();
 }

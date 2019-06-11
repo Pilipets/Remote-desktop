@@ -6,7 +6,7 @@ QVNCViewer::QVNCViewer(QWidget *parent):
     QWidget(parent), m_state(Disconnected), m_msgType(0), m_handleMsg(false),
     frameBufferWidth(0), frameBufferHeight(0)
 {
-    connect(this, SIGNAL(frameBufferUpdated()), this, SLOT(sendFrameBufferUpdateRequest()));
+    //connect(this, SIGNAL(frameBufferUpdated()), this, SLOT(sendFrameBufferUpdateRequest()));
 
     server = new QTcpSocket();
 
@@ -39,9 +39,29 @@ bool QVNCViewer::connectToVncServer(QString ip, quint16 port)
 
 void QVNCViewer::disconnectFromVncServer()
 {
+    if(m_state == Disconnected)
+        return;
     server->close();
     m_state = Disconnected;
 }
+
+void QVNCViewer::startFrameBufferUpdate()
+{
+    if(m_state == Paused || m_state == Connected){
+        connect(this, SIGNAL(frameBufferUpdated()), this, SLOT(sendFrameBufferUpdateRequest()));
+        sendFrameBufferUpdateRequest();
+        m_state = Connected;
+    }
+}
+
+void QVNCViewer::stopFrameBufferUpdate()
+{
+    if(m_state != Connected)
+        return;
+    disconnect(this, SIGNAL(frameBufferUpdated()), this, SLOT(sendFrameBufferUpdateRequest()));
+    m_state = Paused;
+}
+
 
 void QVNCViewer::paintEvent(QPaintEvent *)
 {
@@ -173,7 +193,7 @@ void QVNCViewer::readServer()
             qDebug() << "Name: " << response.name << "\n";
             screen = QImage(frameBufferWidth, frameBufferHeight, QImage::Format_RGB32);
             m_state = Connected;
-            this->sendFrameBufferUpdateRequest();
+            this->startFrameBufferUpdate();
         }
         break;
     case Connected:

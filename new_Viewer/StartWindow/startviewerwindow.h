@@ -20,10 +20,12 @@ private slots:
 
     void on_disconnectBtn_clicked();
 
+    void on_showScreenBtn_clicked();
+
 private:
     Ui::StartViewerWindow *ui;
 
-    StreamViewerWindow* viewerWindow;
+    StreamViewerWindow* streamWindow;
 };
 
 #endif // STARTVIEWERWINDOW_H

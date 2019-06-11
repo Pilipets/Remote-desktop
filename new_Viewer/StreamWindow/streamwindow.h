@@ -2,7 +2,7 @@
 #define STREAMVIEWERWINDOW_H
 
 #include <QMainWindow>
-
+#include"qvncviewer.h"
 namespace Ui {
 class StreamViewerWindow;
 }
@@ -15,8 +15,7 @@ public:
     explicit StreamViewerWindow(QWidget *parent = nullptr);
     ~StreamViewerWindow();
 
-
-    void connect(const QString& address);
+    QVNCViewer *getViewer() const;
 
 private:
     Ui::StreamViewerWindow *ui;

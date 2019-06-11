@@ -16,7 +16,10 @@ public:
 
     bool connectToVncServer(QString ip, quint16 port);
     void disconnectFromVncServer();
-    bool isConnected() {return m_state == Connected;}
+    bool isConnected() {return m_state == Connected || m_state == Paused;}
+    void startFrameBufferUpdate();
+
+    void stopFrameBufferUpdate();
 private:
     void paintEvent(QPaintEvent *) override;
 
@@ -30,7 +33,7 @@ signals:
 private:
     enum ServerMsg { FramebufferUpdate = 0};
     enum ClientState {
-        Disconnected, Protocol, Authentication, Init, Connected};
+        Disconnected, Protocol, Authentication, Init, Connected, Paused};
 
     QTcpSocket* server;
 
