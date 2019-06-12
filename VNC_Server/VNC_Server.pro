@@ -5,7 +5,7 @@
 #-------------------------------------------------
 
 QT       += core gui network
-
+#LIBS += -framework ApplicationServices
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = VNC_Server
@@ -26,16 +26,16 @@ CONFIG += c++11
 
 SOURCES += \
         main.cpp \
-        mainwindow.cpp \
-    qvnc_client.cpp \
-    qvnc_server.cpp \
-    qvnc_connection.cpp
+    VNCServer/qvnc_client.cpp \
+    VNCServer/qvnc_server.cpp \
+    NetworkHandlers/qvnc_connection.cpp \
+    ServerWindow/serverstartwindow.cpp
 
 HEADERS += \
-        mainwindow.h \
-    qvnc_client.h \
-    qvnc_connection.h \
-    qvnc_server.h
+    VNCServer/qvnc_client.h \
+    NetworkHandlers/qvnc_connection.h \
+    VNCServer/qvnc_server.h \
+    ServerWindow/serverstartwindow.h
 
 FORMS += \
         mainwindow.ui

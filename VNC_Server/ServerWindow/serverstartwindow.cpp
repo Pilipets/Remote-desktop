@@ -1,15 +1,15 @@
-#include "mainwindow.h"
+#include "serverstartwindow.h"
 #include "ui_mainwindow.h"
 #include <QtGui>
-MainWindow::MainWindow(QWidget *parent) :
+ServerStartWindow::ServerStartWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::ServerStartWindow)
 {
     ui->setupUi(this);
     server = new QVncServer(QGuiApplication::primaryScreen());
 }
 
-MainWindow::~MainWindow()
+ServerStartWindow::~ServerStartWindow()
 {
     delete ui;
     delete server;

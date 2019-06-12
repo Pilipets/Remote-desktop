@@ -2,7 +2,7 @@
 #define QVNC_CLIENT_H
 
 #include "qvnc_server.h"
-#include "qvnc_connection.h"
+#include "NetworkHandlers/qvnc_connection.h"
 #include <QObject>
 #include <QRegion>
 
