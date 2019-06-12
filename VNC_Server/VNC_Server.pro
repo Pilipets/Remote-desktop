@@ -29,13 +29,15 @@ SOURCES += \
     VNCServer/qvnc_client.cpp \
     VNCServer/qvnc_server.cpp \
     NetworkHandlers/qvnc_connection.cpp \
-    ServerWindow/serverstartwindow.cpp
+    ServerWindow/serverstartwindow.cpp \
+    MacEventHandlers/MacAPI.cpp
 
 HEADERS += \
     VNCServer/qvnc_client.h \
     NetworkHandlers/qvnc_connection.h \
     VNCServer/qvnc_server.h \
-    ServerWindow/serverstartwindow.h
+    ServerWindow/serverstartwindow.h \
+    MacEventHandlers/MacAPI.h
 
 FORMS += \
         mainwindow.ui

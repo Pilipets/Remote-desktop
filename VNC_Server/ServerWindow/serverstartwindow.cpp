@@ -6,6 +6,8 @@ ServerStartWindow::ServerStartWindow(QWidget *parent) :
     ui(new Ui::ServerStartWindow)
 {
     ui->setupUi(this);
+    this->setFixedSize(this->size());
+
     server = new QVncServer(QGuiApplication::primaryScreen());
 }
 

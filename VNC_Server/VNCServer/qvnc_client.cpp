@@ -8,6 +8,8 @@
 #include <QDebug>
 #include <QKeyEvent>
 #include <QApplication>
+#include "MacEventHandlers/MacAPI.h"
+#include <QKeySequence>
 
 QVncClient::QVncClient(QTcpSocket *clientSocket, QVncServer *server):
     QObject (server), m_server(server), m_clientSocket(clientSocket),
@@ -184,9 +186,16 @@ void QVncClient::keyEvent()
             m_keymod = ev.down ? m_keymod | Qt::AltModifier :
                                  m_keymod & ~Qt::AltModifier;
         if (ev.unicode || ev.keycode){
-            qDebug() << "Process button event" << ev.keycode;
-            //QKeyEvent key(ev.down ? QEvent::KeyPress : QEvent::KeyRelease, ev.keycode,m_keymod, QString(ev.unicode));
-            //QCoreApplication::postEvent (receiver, event);
+            if(ev.down)
+                MacApi::PressKey(ev.unicode);
+            else
+                MacApi::ReleaseKey(ev.unicode);
+
+            QString repr = QKeySequence(ev.keycode).toString();
+            if(ev.down)
+                qDebug() << "Process button pressed event" << (repr.isEmpty() ? repr : QString::number(ev.keycode));
+            else
+                qDebug() << "Process button released event" << (repr.isEmpty() ? repr : QString::number(ev.keycode));
             //QWindowSystemInterface::handleKeyEvent(0, ev.down ? QEvent::KeyPress : QEvent::KeyRelease, ev.keycode, m_keymod, QString(ev.unicode));
         }
 

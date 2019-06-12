@@ -1,5 +1,5 @@
 #include "qvnc_connection.h"
-#include "qvnc_client.h"
+#include "VNCServer/qvnc_client.h"
 #include <QtEndian>
 #include <QtNetwork/QTcpSocket>
 #include <QScreen>
