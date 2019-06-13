@@ -68,6 +68,8 @@ private:
     bool m_wantUpdate;
 
     ProtocolVersion m_protocolVersion;
+
+    bool leftPressed = false, rightPressed = false;
 };
 
 #endif // QVNC_CLIENT_H

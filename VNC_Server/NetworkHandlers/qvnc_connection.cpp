@@ -8,6 +8,7 @@
 #include <QApplication>
 #include <QKeySequence>
 #include <QString>
+#include <QBuffer>
 
 static const struct {
     int keysym;
@@ -61,7 +62,8 @@ bool QRfbKeyEvent::read(QTcpSocket *s)
         if (key <= 0xff) {
             unicode = key;
             if (key >= 'a' && key <= 'z')
-                keycode = Qt::Key_A + key - 'a';
+                keycode = key;
+                //keycode = Qt::Key_A + key - 'a';
             else if (key >= ' ' && key <= '~')
                 keycode = Qt::Key_Space + key - ' ';
         }
@@ -192,20 +194,31 @@ void QRfbRawEncoder::write()
     const QPixmap originalPixMap = screen->grabWindow(0,0,0,screenSize.width(), screenSize.height());
     const QImage screenImage = originalPixMap.toImage();
 
-    const QRfbRect rect(0,0,screenSize.width(),screenSize.height());
-    rect.write(socket);
+    QByteArray im;
+    QBuffer bufferJpeg(&im);
+    bufferJpeg.open(QIODevice::WriteOnly);
+    screenImage.save(&bufferJpeg, "JPG");
+
+    qint32 size = bufferJpeg.data().size();
+    QByteArray size_array((const char*)&size,4);
+    socket->write(size_array);
+    //const QRfbRect rect(0,0,screenSize.width(),screenSize.height());
+    //rect.write(socket);
+
 
     const quint32 encoding = qToBigEndian(0); // raw encoding
     socket->write((char *)&encoding, sizeof(encoding));
 
-    int linestep = screenImage.bytesPerLine();
+    /*int linestep = screenImage.bytesPerLine();
     const uchar *screendata = screenImage.scanLine(rect.y) + rect.x * screenImage.depth() / 8;
 
     for (int i = 0; i < rect.h && socket->state() == QTcpSocket::ConnectedState; ++i) {
         //qApp->processEvents();
         socket->write((const char*)screendata, rect.w * bytesPerPixel);
         screendata += linestep;
-    }
+    }*/
+    socket->write(bufferJpeg.data());
+    //qApp->processEvents();
     socket->flush();
 
 }

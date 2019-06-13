@@ -2,6 +2,7 @@
 #include<QtNetwork/QHostAddress>
 #include <QPainter>
 #include <QKeyEvent>
+#include <QImageReader>
 
 QVNCViewer::QVNCViewer(QWidget *parent):
     QWidget(parent), m_state(Disconnected), m_msgType(0), m_handleMsg(false),
@@ -186,52 +187,61 @@ void QVNCViewer::handleFrameBufferUpdate()
         response = server->read(2); // number of rectangles
         quint16 noOfRects = qMakeU16(response.at(0), response.at(1));
 
+        QImage img;
         for(int i=0; i<noOfRects && server->state() == QTcpSocket::ConnectedState; i++)
         {
-            QRfbRect rect;
-            rect.read(server);
+            //QRfbRect rect;
+            //rect.read(server);
+            response = server->read(4);
+            quint32 length = *(quint32*)response.data();
 
             response = server->read(4);
             int encodingType = qMakeU32(response.at(0), response.at(1), response.at(2), response.at(3));
-            QImage image(rect.w, rect.h, QImage::Format_RGB32);
+            //QImage image(rect.w, rect.h, QImage::Format_RGB32);
 
             if(encodingType == 0)
             {
-                int noOfBytes = rect.w * rect.h * (pixelFormat.bitsPerPixel / 8);
+                //int noOfBytes = rect.w * rect.h * (pixelFormat.bitsPerPixel / 8);
                 QByteArray pixelsData;
                 do
                 {
                     qApp->processEvents();
-                    QByteArray temp = server->read(noOfBytes);
+                    QByteArray temp = server->read(length);
                     pixelsData.append(temp);
-                    noOfBytes -= temp.size();
+                    length -= temp.size();
                 }
-                while(noOfBytes > 0 && server->state() == QTcpSocket::ConnectedState);
+                while(length > 0 && server->state() == QTcpSocket::ConnectedState);
 
-                uchar* img_pointer = image.bits();
-                int pixel_byte_cnt = 0;
-                for(int i=0; i<rect.h && server->state() == QTcpSocket::ConnectedState; i++)
-                {
-                    qApp->processEvents();
+                QBuffer qbuff(&pixelsData);
+                QImageReader qimg;
+                qimg.setDecideFormatFromContent(true);
+                qimg.setDevice(&qbuff);
+                img = qimg.read();
 
-                    for(int j=0; j<rect.w && server->state() == QTcpSocket::ConnectedState; j++)
-                    {
-                        // The order of the colors is BGR (not RGB)
-                        img_pointer[0] = pixelsData.at(pixel_byte_cnt);
-                        img_pointer[1] = pixelsData.at(pixel_byte_cnt+1);
-                        img_pointer[2] = pixelsData.at(pixel_byte_cnt+2);
-                        img_pointer[3] = pixelsData.at(pixel_byte_cnt+3);
+//                uchar* img_pointer = image.bits();
+//                int pixel_byte_cnt = 0;
+//                for(int i=0; i<rect.h && server->state() == QTcpSocket::ConnectedState; i++)
+//                {
+//                    qApp->processEvents();
 
-                        pixel_byte_cnt += 4;
-                        img_pointer += 4;
-                    }
-                }
+//                    for(int j=0; j<rect.w && server->state() == QTcpSocket::ConnectedState; j++)
+//                    {
+//                        // The order of the colors is BGR (not RGB)
+//                        img_pointer[0] = pixelsData.at(pixel_byte_cnt);
+//                        img_pointer[1] = pixelsData.at(pixel_byte_cnt+1);
+//                        img_pointer[2] = pixelsData.at(pixel_byte_cnt+2);
+//                        img_pointer[3] = pixelsData.at(pixel_byte_cnt+3);
+
+//                        pixel_byte_cnt += 4;
+//                        img_pointer += 4;
+//                    }
+//                }
             }
 
             //QPainter painter(&screen);
             //painter.drawImage(rect.x, rect.y, image);
             //painter.end();
-            screen = std::move(image);
+            screen = std::move(img);
 
             repaint();
         }

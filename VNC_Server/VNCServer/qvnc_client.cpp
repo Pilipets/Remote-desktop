@@ -104,6 +104,31 @@ void QVncClient::readClient()
                 format.greenShift = 8;
                 format.blueShift = 0;
                 break;
+            case 18:
+                format.bitsPerPixel = 24;
+                format.depth = 18;
+                format.bigEndian = 0;
+                format.trueColor = true;
+                format.redBits = 6;
+                format.greenBits = 6;
+
+               format.blueBits = 6;
+               format.redShift = 12;
+               format.greenShift = 6;
+               format.blueShift = 0;
+               break;
+            case 16:
+                format.bitsPerPixel = 16;
+                format.depth = 16;
+                format.bigEndian = 0;
+                format.trueColor = true;
+                format.redBits = 5;
+                format.greenBits = 6;
+                format.blueBits = 5;
+                format.redShift = 11;
+                format.greenShift = 5;
+                format.blueShift = 0;
+                break;
             default:
                 qWarning("QVNC cannot drive depth %d", m_server->screen()->depth());
                 discardClient();
@@ -219,7 +244,29 @@ void QVncClient::pointerEvent()
     QRfbPointerEvent ev;
     if (ev.read(m_clientSocket)) {
         const QPoint pos = m_server->screen()->geometry().topLeft() + QPoint(ev.x, ev.y);
-        qDebug() << "Mouse moved to " << pos.x() << " " << pos.y();
+        //qDebug() << "Mouse moved to " << pos.x() << " " << pos.y();
+
+
+        if(ev.buttons == Qt::LeftButton)
+        {
+            leftPressed = !leftPressed;
+            qDebug() << "Left button event";
+            if(leftPressed)
+                MacApi::PressMouseLeft(pos.x(),pos.y());
+            else
+                MacApi::ReleaseMouseLeft(pos.x(), pos.y());
+        }
+        else if(ev.buttons == Qt::RightButton){
+            rightPressed = !rightPressed;
+            qDebug() << "Right button event";
+            if(rightPressed)
+                MacApi::PressMouseRight(pos.x(), pos.y());
+            else
+                MacApi::ReleaseMouseRight(pos.x(),pos.y());
+        }
+        else{
+            MacApi::MoveMouse(pos.x(), pos.y());
+        }
         //QWindowSystemInterface::handleMouseEvent(0, pos, pos, ev.buttons, QGuiApplication::keyboardModifiers());
         m_handleMsg = false;
     }
