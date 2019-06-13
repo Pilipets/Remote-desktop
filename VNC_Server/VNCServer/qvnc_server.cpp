@@ -11,7 +11,8 @@
 QVncServer::QVncServer(QScreen *screen, quint16 port):
     qvnc_screen(screen), m_port(port)
 {
-    QMetaObject::invokeMethod(this, "init", Qt::QueuedConnection);
+    this->init();
+    //QMetaObject::invokeMethod(this, "init", Qt::QueuedConnection);
 }
 void QVncServer::init()
 {

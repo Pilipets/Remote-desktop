@@ -1,19 +1,21 @@
-//#include <ApplicationServices/ApplicationServices.h>
+#ifdef Q_OS_MAC
+    #include <ApplicationServices/ApplicationServices.h>
+#endif
 #include "MacAPI.h"
 
 void MacApi::PressKey(quint16 unicode)
 {
-    //CGEventRef downEvt = CGEventCreateKeyboardEvent(NULL, 0, true);
-    //UniChar oneChar = unicode;
-    //CGEventKeyboardSetUnicodeString(downEvt,1,&oneChar);
-    //CGEventPost(kCGAnnotatedSessionEventTap,downEvt);
+    CGEventRef downEvt = CGEventCreateKeyboardEvent(NULL, 0, true);
+    UniChar oneChar = unicode;
+    CGEventKeyboardSetUnicodeString(downEvt,1,&oneChar);
+    CGEventPost(kCGAnnotatedSessionEventTap,downEvt);
 }
 
 
 void MacApi::ReleaseKey(quint16 unicode)
 {
-    //CGEventRef upEvt = CGEventCreateKeyboardEvent(NULL, 0, false);
-    //UniChar oneChar = unicode;
-    //CGEventKeyboardSetUnicodeString(upEvt,1,&oneChar);
-    //CGEventPost(kCGAnnotatedSessionEventTap,upEvt);
+    CGEventRef upEvt = CGEventCreateKeyboardEvent(NULL, 0, false);
+    UniChar oneChar = unicode;
+    CGEventKeyboardSetUnicodeString(upEvt,1,&oneChar);
+    CGEventPost(kCGAnnotatedSessionEventTap,upEvt);
 }

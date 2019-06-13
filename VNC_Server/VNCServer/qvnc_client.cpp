@@ -81,6 +81,17 @@ void QVncClient::readClient()
             QRfbServerInit sim;
             QRfbPixelFormat &format = sim.format;
             switch (m_server->screen()->depth()) {
+            case 24:
+                format.bitsPerPixel = 24;
+                format.depth = 24;
+                format.bigEndian = 0;
+                format.trueColor = true;
+                format.redBits = 8;
+                format.greenBits = 8;
+                format.blueBits = 8;
+                format.redShift = 16;
+                format.greenShift = 8;
+                format.blueShift = 0;
             case 32:
                 format.bitsPerPixel = 32;
                 format.depth = 32;

@@ -1,8 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
-
 #include <QMainWindow>
 #include "VNCServer/qvnc_server.h"
+
 namespace Ui {
 class ServerStartWindow;
 }
