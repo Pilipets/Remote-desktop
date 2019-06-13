@@ -7,12 +7,10 @@
 #include <QtNetwork/QTcpSocket>
 #include <QScreen>
 
-
 QVncServer::QVncServer(QScreen *screen, quint16 port):
     qvnc_screen(screen), m_port(port)
 {
     this->init();
-    //QMetaObject::invokeMethod(this, "init", Qt::QueuedConnection);
 }
 void QVncServer::init()
 {
@@ -49,4 +47,3 @@ void QVncServer::newConnection()
 
     qDebug() << "new Connection from: " << clientSocket->localAddress();
 }
-

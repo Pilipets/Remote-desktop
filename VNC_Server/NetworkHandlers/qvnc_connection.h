@@ -45,8 +45,6 @@ class QRfbPixelFormat
 {
 public:
     static int size() { return 16; }
-
-    //void read(QTcpSocket *s);
     void write(QTcpSocket *s);
 
     quint8 bitsPerPixel;

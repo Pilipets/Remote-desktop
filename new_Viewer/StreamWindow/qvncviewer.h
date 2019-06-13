@@ -50,8 +50,6 @@ private:
     quint8 m_msgType;
     bool m_handleMsg;
     QRfbPixelFormat pixelFormat;
-
-
 };
 
 #endif // QVNCVIEWER_H

@@ -46,7 +46,6 @@ void MacApi::ReleaseMouseLeft(quint16 x, quint16 y)
 {
     CGPoint point;
     point.x = x, point.y = y;
-    //PostMouseEvent(kCGMouseButtonLeft, kCGEventMouseMoved, point);
     PostMouseEvent(kCGMouseButtonLeft, kCGEventLeftMouseUp, point);
 }
 
@@ -54,7 +53,6 @@ void MacApi::ReleaseMouseRight(quint16 x, quint16 y)
 {
     CGPoint point;
     point.x = x, point.y = y;
-    //PostMouseEvent(kCGMouseButtonRight, kCGEventMouseMoved, point);
     PostMouseEvent(kCGMouseButtonRight, kCGEventRightMouseUp, point);
 }
 

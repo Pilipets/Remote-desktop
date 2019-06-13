@@ -16,7 +16,6 @@ QVncClient::QVncClient(QTcpSocket *clientSocket, QVncServer *server):
     m_encoder(nullptr),m_msgType(0),m_handleMsg(false),
     m_wantUpdate(false), m_protocolVersion(V3_8)
 {
-
     connect(m_clientSocket,SIGNAL(readyRead()),this,SLOT(readClient()));
     connect(m_clientSocket,SIGNAL(disconnected()),this,SLOT(discardClient()));
 
@@ -24,13 +23,11 @@ QVncClient::QVncClient(QTcpSocket *clientSocket, QVncServer *server):
     const char *proto = "RFB 003.007\n";
     m_clientSocket->write(proto, 12);
     m_state = Protocol;
-
     m_encoder = new QRfbRawEncoder(this);
 }
 
 QVncClient::~QVncClient()
 {
-    //m_clientSocket->disconnect();
     m_clientSocket->disconnect();
     m_clientSocket->deleteLater();
     delete m_encoder;
@@ -44,7 +41,6 @@ QTcpSocket *QVncClient::clientSocket() const
 
 void QVncClient::readClient()
 {
-    //qDebug() << "readClient" << m_state;
     switch (m_state) {
     case Disconnected:
         break;
@@ -65,7 +61,6 @@ void QVncClient::readClient()
                 quint32 auth = qToBigEndian(1);
                 m_clientSocket->write((char *) &auth, sizeof(auth));
                 m_state = Init;
-
             }
         }
         break;
@@ -77,7 +72,6 @@ void QVncClient::readClient()
             m_clientSocket->read((char *) &shared, 1);
 
             // Server Init msg
-
             QRfbServerInit sim;
             QRfbPixelFormat &format = sim.format;
             switch (m_server->screen()->depth()) {
@@ -139,7 +133,6 @@ void QVncClient::readClient()
             sim.setName("Qt for Mac OS VNC Server");
             sim.write(m_clientSocket);
             m_pixelFormat = format;
-
             m_state = Connected;
         }
         break;
@@ -192,15 +185,12 @@ void QVncClient::checkUpdate()
 
 void QVncClient::frameBufferUpdateRequest()
 {
-    //qDebug() << "FramebufferUpdateRequest";
     QRfbFrameBufferUpdateRequest ev;
 
     if (ev.read(m_clientSocket)) {
-        if (!ev.incremental) {
+        if (!ev.incremental)
             QRect r(ev.rect.x, ev.rect.y, ev.rect.w, ev.rect.h);
-            //r.translate(m_server->screen()->geometry().topLeft());
-            //setDirty(r);
-        }
+
         m_wantUpdate = true;
         checkUpdate();
         m_handleMsg = false;
@@ -232,9 +222,7 @@ void QVncClient::keyEvent()
                 qDebug() << "Process button pressed event" << (repr.isEmpty() ? repr : QString::number(ev.keycode));
             else
                 qDebug() << "Process button released event" << (repr.isEmpty() ? repr : QString::number(ev.keycode));
-            //QWindowSystemInterface::handleKeyEvent(0, ev.down ? QEvent::KeyPress : QEvent::KeyRelease, ev.keycode, m_keymod, QString(ev.unicode));
-        }
-
+            }
         m_handleMsg = false;
     }
 }
@@ -244,8 +232,6 @@ void QVncClient::pointerEvent()
     QRfbPointerEvent ev;
     if (ev.read(m_clientSocket)) {
         const QPoint pos = m_server->screen()->geometry().topLeft() + QPoint(ev.x, ev.y);
-        //qDebug() << "Mouse moved to " << pos.x() << " " << pos.y();
-
 
         if(ev.buttons == Qt::LeftButton)
         {
@@ -267,8 +253,6 @@ void QVncClient::pointerEvent()
         else{
             MacApi::MoveMouse(pos.x(), pos.y());
         }
-        //QWindowSystemInterface::handleMouseEvent(0, pos, pos, ev.buttons, QGuiApplication::keyboardModifiers());
         m_handleMsg = false;
     }
 }
-

@@ -44,7 +44,7 @@ bool QRfbKeyEvent::read(QTcpSocket *s)
 
     s->read(&down, 1);
     quint16 tmp;
-    s->read((char *)&tmp, 2);  // padding
+    s->read((char *)&tmp, 2);         // padding
     quint32 key;
     s->read((char *)&key, 4);
     key = qFromBigEndian(key);
@@ -62,8 +62,7 @@ bool QRfbKeyEvent::read(QTcpSocket *s)
         if (key <= 0xff) {
             unicode = key;
             if (key >= 'a' && key <= 'z')
-                keycode = key;
-                //keycode = Qt::Key_A + key - 'a';
+                keycode = Qt::Key_A + key - 'a';
             else if (key >= ' ' && key <= '~')
                 keycode = Qt::Key_Space + key - ' ';
         }
@@ -178,13 +177,12 @@ bool QRfbFrameBufferUpdateRequest::read(QTcpSocket *s)
 
 void QRfbRawEncoder::write()
 {
-    //qDebug() << "QRfbRawEncoder::write()";
     QTcpSocket *socket = client->clientSocket();
 
-    const char tmp[2] = { 0, 0 }; // msg type, padding
+    const char tmp[2] = { 0, 0 };         // msg type, padding
     socket->write(tmp, sizeof(tmp));
 
-    const quint16 count = qToBigEndian(quint16(1)); //rectangle amount
+    const quint16 count = qToBigEndian(quint16(1));    //rectangle amount
     socket->write((char *)&count, sizeof(count));
 
     QScreen* const screen = client->server()->screen();
@@ -202,23 +200,8 @@ void QRfbRawEncoder::write()
     qint32 size = bufferJpeg.data().size();
     QByteArray size_array((const char*)&size,4);
     socket->write(size_array);
-    //const QRfbRect rect(0,0,screenSize.width(),screenSize.height());
-    //rect.write(socket);
-
-
-    const quint32 encoding = qToBigEndian(0); // raw encoding
+    const quint32 encoding = qToBigEndian(0);       // raw encoding
     socket->write((char *)&encoding, sizeof(encoding));
-
-    /*int linestep = screenImage.bytesPerLine();
-    const uchar *screendata = screenImage.scanLine(rect.y) + rect.x * screenImage.depth() / 8;
-
-    for (int i = 0; i < rect.h && socket->state() == QTcpSocket::ConnectedState; ++i) {
-        //qApp->processEvents();
-        socket->write((const char*)screendata, rect.w * bytesPerPixel);
-        screendata += linestep;
-    }*/
     socket->write(bufferJpeg.data());
-    //qApp->processEvents();
     socket->flush();
-
 }

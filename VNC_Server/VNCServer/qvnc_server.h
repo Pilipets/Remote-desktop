@@ -18,7 +18,6 @@ public:
 
     void setDirty();
 
-
     inline QScreen* screen() const { return qvnc_screen; }
     QImage screenImage() const;
     void discardClient(QVncClient *client);

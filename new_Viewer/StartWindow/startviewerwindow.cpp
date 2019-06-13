@@ -23,7 +23,6 @@ void StartViewerWindow::on_connectBtn_clicked()
     {
         this->on_showScreenBtn_clicked();
         return;
-
     }
     QString address = ui->addressLineEdit->text();
     QStringList parsed_list = address.split(':');
