@@ -1,6 +1,4 @@
-#ifdef Q_OS_MAC
-    #include <ApplicationServices/ApplicationServices.h>
-#endif
+#include <ApplicationServices/ApplicationServices.h>
 #include "MacAPI.h"
 
 void MacApi::PressKey(quint16 unicode)
