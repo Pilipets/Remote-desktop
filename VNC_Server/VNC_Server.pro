@@ -5,7 +5,7 @@
 #-------------------------------------------------
 
 QT       += core gui network
-#LIBS += -framework ApplicationServices
+LIBS += -framework ApplicationServices
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = VNC_Server
