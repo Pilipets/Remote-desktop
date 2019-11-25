@@ -1,7 +1,5 @@
 # Remote-desktop
-Remote desktop application base on VNC protocol for Mac OS. One server - multiple clients.
-Currently mouse movements, keyboard pressing, screen sharing options are supported.
-Used technologies: Qt Creator, C++, ApplicationServices Framework.
+Remote desktop application base on the VNC protocol for Mac OS. One server - multiple clients. Currently, mouse movements, keyboard pressing, screen sharing options are supported. Used technologies: Qt Creator, C++, ApplicationServices Framework.
 
 Todo:
 1. Allow user special cursor.
